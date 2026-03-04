@@ -1,0 +1,13 @@
+{
+  "name": "website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node dev-server.js",
+    "start": "node dev-server.js",
+    "electron:dev": "node electron-dev.js"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  }
+}

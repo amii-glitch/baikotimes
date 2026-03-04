@@ -1,0 +1,489 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>BAIKO TIMES</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="top-header">
+    <div class="header-row">
+      <h1>BAIKO TIMES</h1>
+      <div class="header-actions">
+        <button class="reload-button" id="reloadButton" type="button" aria-label="ページを更新">再読み込み</button>
+        <button class="add-spot-button" id="addSpotButton" type="button" aria-label="記事を追加">＋</button>
+        <button class="menu-toggle" id="menuToggle" aria-label="メニューを開く" aria-expanded="false" aria-controls="siteMenu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <form class="search-form" id="searchForm" role="search" aria-label="サイト内検索">
+      <input id="searchInput" type="search" placeholder="記事・タグを検索" aria-label="検索キーワード" />
+      <button type="submit">検索</button>
+    </form>
+  </header>
+
+  <nav class="site-menu" id="siteMenu" aria-hidden="true">
+    <h2>メニュー</h2>
+    <ul>
+      <li><a href="#">最新号</a></li>
+      <li>
+        <a href="#">記事一覧</a>
+      </li>
+      <li><a href="#">バックナンバー</a></li>
+      <li><a href="#">広報誌について</a></li>
+      <li><a href="#">お問い合わせ</a></li>
+    </ul>
+  </nav>
+
+  <section class="hero" aria-label="BAIKO TIMES トップビジュアル">
+    <div class="hero-copy">
+      <p class="hero-kicker">学生制作広報誌</p>
+      <p class="hero-title">BAIKO TIMES</p>
+    </div>
+  </section>
+
+  <main class="content-wrap">
+    <section class="latest-issue">
+      <h2 class="tab-title">最新号</h2>
+      <div class="issue-card">
+        <p>BAIKO TIMES 2026年2月号</p>
+        <a href="#">最新号を読む</a>
+      </div>
+    </section>
+
+    <section class="latest-issue">
+      <h2 class="tab-title">おすすめの投稿</h2>
+      <div class="issue-card">
+        <ul class="spots-list" id="spotsList"></ul>
+        <p class="spots-empty" id="spotsEmpty">まだ記事が登録されていません。</p>
+      </div>
+    </section>
+
+    <section class="latest-issue">
+      <h2 class="tab-title">広報誌について</h2>
+      <div class="issue-card about-magazine-card">
+        <p>BAIKO TIMESは、大学の出来事や在学生の活動、進路情報を分かりやすく届ける広報誌です。</p>
+      </div>
+    </section>
+
+    <section class="latest-issue">
+      <h2 class="tab-title">質問コーナー</h2>
+      <div class="issue-card question-card">
+        <p>気になることや感想を気軽に送ってください。</p>
+        <form class="question-form" id="questionForm">
+          <label for="questionName">お名前（任意）</label>
+          <input id="questionName" name="name" type="text" placeholder="ニックネームでもOK" />
+
+          <label for="questionComment">コメント</label>
+          <textarea id="questionComment" name="comment" rows="5" placeholder="質問・感想を入力してください" required></textarea>
+
+          <button id="questionSubmit" type="submit">コメントを送信</button>
+          <p class="question-status" id="questionStatus" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <section class="embedded-about" aria-label="梅光学院大学 広報ページ">
+    <iframe src="./baiko-about.html" title="梅光学院大学 広報ページ"></iframe>
+  </section>
+
+  <div class="spot-modal" id="spotModal" hidden>
+    <div class="spot-modal-backdrop" id="spotModalBackdrop"></div>
+    <div class="spot-modal-panel" role="dialog" aria-modal="true" aria-labelledby="spotModalTitle">
+      <div class="spot-modal-head">
+        <h2 id="spotModalTitle">記事を登録</h2>
+        <button class="spot-modal-close" id="spotModalClose" type="button" aria-label="閉じる">×</button>
+      </div>
+      <form class="spot-form" id="spotForm">
+        <label for="spotYear">掲載号（年）</label>
+        <input id="spotYear" name="issueYear" type="number" min="1900" max="2100" required placeholder="2026" />
+
+        <label for="spotMonth">掲載号（月）</label>
+        <input id="spotMonth" name="issueMonth" type="number" min="1" max="12" required placeholder="2" />
+
+        <label for="spotTitle">記事タイトル</label>
+        <input id="spotTitle" name="title" type="text" maxlength="120" required placeholder="例: 春のオープンキャンパス特集" />
+
+        <label for="spotFile">掲載ファイル</label>
+        <input id="spotFile" name="file" type="file" required />
+
+        <label for="spotSummary">説明（任意）</label>
+        <textarea id="spotSummary" name="summary" rows="3" maxlength="400" placeholder="記事の説明を入力"></textarea>
+
+        <label for="spotTags">タグ（任意・カンマ区切り）</label>
+        <input id="spotTags" name="tags" type="text" placeholder="例: オープンキャンパス, 留学, インタビュー" />
+        <button class="spot-tag-ai" id="spotTagAiButton" type="button">AIでタグ提案</button>
+
+        <button id="spotSubmit" type="submit">spots.json に保存</button>
+        <p class="spot-status" id="spotStatus" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const menuToggle = document.getElementById('menuToggle');
+    const siteMenu = document.getElementById('siteMenu');
+    const reloadButton = document.getElementById('reloadButton');
+    const addSpotButton = document.getElementById('addSpotButton');
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('searchInput');
+    const spotModal = document.getElementById('spotModal');
+    const spotModalBackdrop = document.getElementById('spotModalBackdrop');
+    const spotModalClose = document.getElementById('spotModalClose');
+    const questionForm = document.getElementById('questionForm');
+    const questionSubmit = document.getElementById('questionSubmit');
+    const questionStatus = document.getElementById('questionStatus');
+    const spotsList = document.getElementById('spotsList');
+    const spotsEmpty = document.getElementById('spotsEmpty');
+    const spotForm = document.getElementById('spotForm');
+    const spotSubmit = document.getElementById('spotSubmit');
+    const spotStatus = document.getElementById('spotStatus');
+    const spotTagAiButton = document.getElementById('spotTagAiButton');
+    let allSpots = [];
+
+    menuToggle.addEventListener('click', () => {
+      const isOpen = siteMenu.classList.toggle('is-open');
+      menuToggle.setAttribute('aria-expanded', String(isOpen));
+      siteMenu.setAttribute('aria-hidden', String(!isOpen));
+    });
+
+    reloadButton.addEventListener('click', () => {
+      window.location.reload();
+    });
+
+    function openSpotModal() {
+      spotModal.hidden = false;
+      document.body.classList.add('is-modal-open');
+      setTimeout(() => {
+        document.getElementById('spotYear').focus();
+      }, 30);
+    }
+
+    function closeSpotModal() {
+      spotModal.hidden = true;
+      document.body.classList.remove('is-modal-open');
+    }
+
+    addSpotButton.addEventListener('click', openSpotModal);
+    spotModalClose.addEventListener('click', closeSpotModal);
+    spotModalBackdrop.addEventListener('click', closeSpotModal);
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !spotModal.hidden) {
+        closeSpotModal();
+      }
+    });
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function renderSpots(spots) {
+      if (!Array.isArray(spots) || spots.length === 0) {
+        spotsList.innerHTML = '';
+        spotsEmpty.style.display = 'block';
+        return;
+      }
+
+      spotsEmpty.style.display = 'none';
+      spotsList.innerHTML = spots.map((spot) => {
+        const title = escapeHtml(String(spot.title || ''));
+        const filePath = String(spot.filePath || '').trim();
+        const legacyUrl = String(spot.url || '').trim();
+        const linkPath = filePath || legacyUrl;
+        const summary = escapeHtml(String(spot.summary || ''));
+        const issueYear = Number(spot.issueYear);
+        const issueMonth = Number(spot.issueMonth);
+        const issueText = Number.isInteger(issueYear) && Number.isInteger(issueMonth)
+          ? `${issueYear}年${issueMonth}月号`
+          : '掲載号未設定';
+        const tags = Array.isArray(spot.tags) ? spot.tags : [];
+        const tagsMarkup = tags.length
+          ? `<p class="spots-tags">${tags.map((tag) => `<span>#${escapeHtml(String(tag))}</span>`).join(' ')}</p>`
+          : '';
+        const titleMarkup = linkPath
+          ? `<a href="${escapeHtml(linkPath)}" target="_blank" rel="noopener noreferrer">${title}</a>`
+          : `<span>${title}</span>`;
+        const summaryMarkup = summary ? `<p>${summary}</p>` : '';
+        return `<li><p class="spots-issue">${issueText}</p>${titleMarkup}${tagsMarkup}${summaryMarkup}</li>`;
+      }).join('');
+    }
+
+    function parseTags(tagText) {
+      const seen = new Set();
+      return String(tagText || '')
+        .split(',')
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => tag && tag.length <= 30 && !seen.has(tag) && seen.add(tag))
+        .slice(0, 12);
+    }
+
+    function inferTagsFromText(text) {
+      const source = String(text || '').toLowerCase();
+      const dict = [
+        ['オープンキャンパス', ['オープンキャンパス', '説明会']],
+        ['入試', ['入試', '受験', '試験']],
+        ['部活動', ['部活', 'クラブ', 'サークル', '大会']],
+        ['留学', ['留学', '海外', '国際']],
+        ['インタビュー', ['インタビュー', '対談']],
+        ['イベント', ['行事', 'イベント', 'フェス']],
+        ['就職・進路', ['就職', '進路', 'キャリア']],
+        ['授業', ['授業', '講義', 'ゼミ']],
+        ['キャンパスライフ', ['学生生活', 'キャンパス', '日常']],
+        ['ボランティア', ['ボランティア', '地域連携']]
+      ];
+
+      const out = [];
+      for (const [tag, keys] of dict) {
+        if (keys.some((k) => source.includes(k))) {
+          out.push(tag.toLowerCase());
+        }
+      }
+
+      const words = source.match(/[a-zA-Z0-9ぁ-んァ-ヶ一-龠]{2,12}/g) || [];
+      for (const word of words) {
+        if (out.length >= 8) break;
+        if (word.length >= 3 && !out.includes(word) && !/^\d+$/.test(word)) {
+          out.push(word);
+        }
+      }
+      return out.slice(0, 8);
+    }
+
+    function applySearch() {
+      const q = String(searchInput.value || '').trim().toLowerCase();
+      if (!q) {
+        renderSpots(allSpots);
+        return;
+      }
+
+      const filtered = allSpots.filter((spot) => {
+        const title = String(spot.title || '').toLowerCase();
+        const summary = String(spot.summary || '').toLowerCase();
+        const tags = Array.isArray(spot.tags) ? spot.tags.join(' ').toLowerCase() : '';
+        const issue = `${spot.issueYear || ''}年${spot.issueMonth || ''}月号`.toLowerCase();
+        return title.includes(q) || summary.includes(q) || tags.includes(q) || issue.includes(q);
+      });
+      renderSpots(filtered);
+    }
+
+    async function fetchSpots() {
+      const response = await fetch('/api/spots');
+      const raw = await response.text();
+      let parsed = {};
+      try {
+        parsed = raw ? JSON.parse(raw) : {};
+      } catch {
+        parsed = {};
+      }
+      if (!response.ok) {
+        const fallback = raw ? `記事一覧の取得に失敗しました (${response.status})` : '記事一覧の取得に失敗しました。';
+        throw new Error(parsed.error || fallback);
+      }
+      return Array.isArray(parsed.spots) ? parsed.spots : [];
+    }
+
+    async function loadSpots() {
+      try {
+        const spots = await fetchSpots();
+        allSpots = spots;
+        applySearch();
+      } catch (error) {
+        spotsEmpty.style.display = 'block';
+        spotsEmpty.textContent = error.message || '記事一覧の読み込みに失敗しました。';
+      }
+    }
+
+    searchForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      applySearch();
+    });
+    searchInput.addEventListener('input', applySearch);
+
+    spotTagAiButton.addEventListener('click', () => {
+      const title = document.getElementById('spotTitle').value.trim();
+      const summary = document.getElementById('spotSummary').value.trim();
+      const userTags = parseTags(document.getElementById('spotTags').value);
+      const aiTags = inferTagsFromText(`${title} ${summary}`);
+      const merged = [...new Set([...userTags, ...aiTags])].slice(0, 12);
+      document.getElementById('spotTags').value = merged.join(', ');
+      spotStatus.textContent = 'AIタグを提案しました。必要なら編集してください。';
+      spotStatus.classList.remove('is-error');
+    });
+
+    spotForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const issueYear = Number(document.getElementById('spotYear').value);
+      const issueMonth = Number(document.getElementById('spotMonth').value);
+      const title = document.getElementById('spotTitle').value.trim();
+      const fileInput = document.getElementById('spotFile');
+      const summary = document.getElementById('spotSummary').value.trim();
+      const tags = [...new Set([
+        ...parseTags(document.getElementById('spotTags').value),
+        ...inferTagsFromText(`${title} ${summary}`)
+      ])].slice(0, 12);
+
+      if (!Number.isInteger(issueYear) || issueYear < 1900 || issueYear > 2100) {
+        spotStatus.textContent = '年は1900〜2100の範囲で入力してください。';
+        spotStatus.classList.add('is-error');
+        return;
+      }
+
+      if (!Number.isInteger(issueMonth) || issueMonth < 1 || issueMonth > 12) {
+        spotStatus.textContent = '月は1〜12の範囲で入力してください。';
+        spotStatus.classList.add('is-error');
+        return;
+      }
+
+      if (!title) {
+        spotStatus.textContent = '記事タイトルを入力してください。';
+        spotStatus.classList.add('is-error');
+        return;
+      }
+
+      const selectedFile = fileInput.files && fileInput.files[0];
+      if (!selectedFile) {
+        spotStatus.textContent = '掲載するファイルを選択してください。';
+        spotStatus.classList.add('is-error');
+        return;
+      }
+
+      if (selectedFile.size > 25 * 1024 * 1024) {
+        spotStatus.textContent = 'ファイルサイズが大きすぎます。25MB以下にしてください。';
+        spotStatus.classList.add('is-error');
+        return;
+      }
+
+      spotSubmit.disabled = true;
+      spotStatus.textContent = '保存中です...';
+      spotStatus.classList.remove('is-error');
+
+      try {
+        const fileData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const raw = String(reader.result || '');
+            const base64 = raw.includes(',') ? raw.split(',')[1] : raw;
+            resolve(base64);
+          };
+          reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました。'));
+          reader.readAsDataURL(selectedFile);
+        });
+
+        const response = await fetch('/api/spots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            issueYear,
+            issueMonth,
+            title,
+            summary,
+            tags,
+            fileName: selectedFile.name,
+            fileData
+          })
+        });
+
+        const raw = await response.text();
+        let parsed = {};
+        try {
+          parsed = raw ? JSON.parse(raw) : {};
+        } catch {
+          parsed = {};
+        }
+        if (!response.ok) {
+          const fallback = raw ? `保存に失敗しました (${response.status})` : '保存に失敗しました。';
+          throw new Error(parsed.error || fallback);
+        }
+
+        spotStatus.textContent = 'spots.json に保存しました。';
+        spotStatus.classList.remove('is-error');
+        spotForm.reset();
+        await loadSpots();
+        setTimeout(() => {
+          closeSpotModal();
+        }, 300);
+      } catch (error) {
+        spotStatus.textContent = error.message || '保存に失敗しました。';
+        spotStatus.classList.add('is-error');
+      } finally {
+        spotSubmit.disabled = false;
+      }
+    });
+
+    loadSpots();
+
+    questionForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = document.getElementById('questionName').value.trim();
+      const comment = document.getElementById('questionComment').value.trim();
+
+      if (!comment) {
+        questionStatus.textContent = 'コメントを入力してください。';
+        questionStatus.classList.add('is-error');
+        return;
+      }
+
+      questionSubmit.disabled = true;
+      questionStatus.textContent = '送信中です...';
+      questionStatus.classList.remove('is-error');
+
+      try {
+        const response = await fetch('https://formsubmit.co/ajax/manapaioniajapan@gmail.com', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({
+            name: name || '未記入',
+            message: comment,
+            _subject: '【質問コーナー】新しいコメント',
+            _captcha: 'false',
+            _url: window.location.href
+          })
+        });
+
+        const raw = await response.text();
+        let result = {};
+        try {
+          result = raw ? JSON.parse(raw) : {};
+        } catch {
+          result = {};
+        }
+
+        if (!response.ok) {
+          const fallback = raw ? `送信に失敗しました (${response.status})` : '送信に失敗しました。';
+          throw new Error(result.error || fallback);
+        }
+
+        if (result.success === false) {
+          throw new Error(result.message || '送信に失敗しました。');
+        }
+
+        questionStatus.textContent = '送信が完了しました。ありがとうございます。';
+        questionStatus.classList.remove('is-error');
+        questionForm.reset();
+      } catch (error) {
+        questionStatus.textContent = error.message || '送信に失敗しました。時間をおいて再試行してください。';
+        questionStatus.classList.add('is-error');
+      } finally {
+        questionSubmit.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+
