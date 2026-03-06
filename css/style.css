@@ -302,21 +302,21 @@ a:hover {
 }
 
 .about-magazine-card {
-  background: #f5f3ee;
+  background: linear-gradient(135deg, #e8f2ff 0%, #dcecff 45%, #f4f9ff 100%);
   border: 0;
   border-radius: 0 12px 12px 12px;
   padding: clamp(44px, 7vw, 86px) clamp(20px, 6vw, 76px);
 }
 
 .about-magazine-inner {
-  width: min(760px, 100%);
+  width: min(980px, 100%);
   margin: 0 auto;
-  text-align: center;
+  text-align: left;
 }
 
 .about-magazine-en {
   margin: 0;
-  color: #4f6f52;
+  color: #0b3d91;
   font-size: clamp(1.2rem, 2.2vw, 1.9rem);
   font-weight: 700;
   letter-spacing: 0.22em;
@@ -324,34 +324,55 @@ a:hover {
 
 .about-magazine-ja {
   margin: 12px 0 0;
-  color: #333333;
+  color: #123a73;
   font-size: clamp(1rem, 1.7vw, 1.3rem);
   font-weight: 500;
   letter-spacing: 0.08em;
 }
 
 .about-magazine-rule {
-  width: min(500px, 100%);
+  width: 100%;
   height: 1px;
-  margin: 26px auto 30px;
-  background: linear-gradient(90deg, rgba(220, 220, 220, 0), #dcdcdc 14%, #dcdcdc 86%, rgba(220, 220, 220, 0));
+  margin: 26px 0 30px;
+  background: linear-gradient(90deg, rgba(90, 140, 210, 0), #8bb4ea 14%, #8bb4ea 86%, rgba(90, 140, 210, 0));
+}
+
+.about-magazine-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
+  gap: clamp(18px, 3vw, 34px);
+  align-items: start;
 }
 
 .about-magazine-body {
-  width: min(64ch, 100%);
-  margin: 0 auto;
-  color: #333333;
+  margin-top: 10px;
+  color: #1d3557;
   text-align: left;
 }
 
 .about-magazine-body p {
   margin: 0;
-  font-size: clamp(0.98rem, 1.25vw, 1.08rem);
+  font-size: clamp(1.08rem, 1.5vw, 1.28rem);
   line-height: 2;
 }
 
 .about-magazine-body p + p {
   margin-top: 1.2em;
+}
+
+.about-magazine-media {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.about-magazine-media img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid #d6d6d6;
+  background: #fff;
 }
 
 @media (max-width: 900px) {
@@ -360,7 +381,15 @@ a:hover {
   }
 
   .about-magazine-rule {
-    margin: 22px auto 24px;
+    margin: 22px 0 24px;
+  }
+
+  .about-magazine-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .about-magazine-media {
+    max-width: 340px;
   }
 }
 

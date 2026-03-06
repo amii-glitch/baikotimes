@@ -32,7 +32,7 @@
   <nav class="site-menu" id="siteMenu" aria-hidden="true">
     <h2>メニュー</h2>
     <ul>
-      <li><a href="./index.html">トップ画面を表示</a></li>
+      <li><a href="./index.html">トップ画面</a></li>
       <li><a href="./articles.html">すべての記事</a></li>
       <li><a id="menuLatestLink" href="#">最新号</a></li>
       <li><a href="#aboutMagazineSection">ＡＢＯＵＴ　ＭＡＧＡＺＩＮ</a></li>
@@ -53,7 +53,6 @@
     <section class="latest-issue">
       <h2 class="tab-title">最新号</h2>
       <div class="issue-card">
-        <p id="latestIssueText">最新号情報を読み込み中...</p>
         <a id="latestIssueLink" href="#">最新号を読む</a>
       </div>
     </section>
@@ -67,16 +66,21 @@
     </section>
 
     <section class="latest-issue" id="aboutMagazineSection">
-      <h2 class="tab-title">広報誌について</h2>
+      <h2 class="tab-title">BAIKO TIMESについて</h2>
       <div class="issue-card about-magazine-card">
         <div class="about-magazine-inner">
           <p class="about-magazine-en">ABOUT MAGAZINE</p>
-          <h3 class="about-magazine-ja">広報誌について</h3>
+          <h3 class="about-magazine-ja">BAIKO TIMESについて</h3>
           <div class="about-magazine-rule" aria-hidden="true"></div>
-          <div class="about-magazine-body">
-            <p>学生広報誌「BAIKO TIMES」は、梅光学院大学の学生が中心となって制作している広報誌です。</p>
-            <p>学生スタッフが企画・取材・編集を行い、学生生活や大学イベント、授業や活動の様子など、梅光学院大学の魅力を学生の視点から発信しています。</p>
-            <p>学生だからこそ伝えられるリアルな大学の姿を、在学生・受験生・地域の方々へ届けています。</p>
+          <div class="about-magazine-layout">
+            <div class="about-magazine-body">
+              <p>学生広報誌「BAIKO TIMES」は、梅光学院大学の学生が<br>中心となって制作している広報誌です。</p>
+              <p>学生スタッフが企画・取材・編集を行い、<br>学生生活や大学イベント、授業や活動の様子など、<br>梅光学院大学の魅力を学生の視点から発信しています。</p>
+              <p>学生だからこそ伝えられるリアルな大学の姿を、<br>在学生・受験生・地域の方々へ届けています。</p>
+            </div>
+            <aside class="about-magazine-media">
+              <img id="aboutMagazineImage" src="./uploads/1772641750165-1.svg" alt="BAIKO TIMES イメージ" />
+            </aside>
           </div>
         </div>
       </div>
@@ -145,7 +149,6 @@
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
     const menuLatestLink = document.getElementById('menuLatestLink');
-    const latestIssueText = document.getElementById('latestIssueText');
     const latestIssueLink = document.getElementById('latestIssueLink');
     const spotModal = document.getElementById('spotModal');
     const spotModalBackdrop = document.getElementById('spotModalBackdrop');
@@ -258,7 +261,6 @@
     function updateLatestIssueSection(spots) {
       const latest = pickLatestAddedSpot(spots);
       if (!latest) {
-        latestIssueText.textContent = '表示できる最新記事がありません。';
         latestIssueLink.setAttribute('href', '#');
         menuLatestLink.setAttribute('href', '#');
         return;
@@ -266,10 +268,6 @@
 
       const issueYear = Number(latest.issueYear);
       const issueMonth = Number(latest.issueMonth);
-      const issueText = Number.isInteger(issueYear) && Number.isInteger(issueMonth)
-        ? `BAIKO TIMES ${issueYear}年${issueMonth}月号`
-        : 'BAIKO TIMES 最新記事';
-      latestIssueText.textContent = issueText;
 
       const filePath = String(latest.filePath || '').trim();
       const legacyUrl = String(latest.url || '').trim();
@@ -362,7 +360,6 @@
         updateLatestIssueSection(spots);
         applySearch();
       } catch (error) {
-        latestIssueText.textContent = '最新号の読み込みに失敗しました。';
         latestIssueLink.setAttribute('href', '#');
         menuLatestLink.setAttribute('href', '#');
         spotsEmpty.style.display = 'block';

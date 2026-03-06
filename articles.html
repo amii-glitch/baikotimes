@@ -27,6 +27,63 @@
       color: var(--text);
     }
 
+
+    .articles-head-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .articles-sort-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 6px 10px;
+    }
+
+    .articles-sort-icon {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1;
+    }
+
+    .articles-sort {
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      padding: 0;
+    }
+
+    .articles-view-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 6px 10px;
+    }
+
+    .articles-view-icon {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1;
+    }
+
+    .articles-view {
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      padding: 0;
+    }
+
     .articles-count {
       margin: 0;
       color: var(--muted);
@@ -45,6 +102,16 @@
       background: #fff;
       border-radius: 12px;
       padding: 14px 16px;
+    }
+
+    .all-articles-list.is-card {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    .all-articles-list.is-card li {
+      border: 1px solid var(--line);
+      height: 100%;
     }
 
     .all-articles-list .issue {
@@ -117,13 +184,31 @@
     <ul>
       <li><a href="./index.html">トップ画面</a></li>
       <li><a href="./articles.html">すべての記事</a></li>
+      <li><a id="menuLatestLink" href="#">最新号</a></li>
+      <li><a href="./index.html#aboutMagazineSection">ＡＢＯＵＴ　ＭＡＧＡＺＩＮ</a></li>
+      <li><a href="./index.html#questionSection">お問い合わせ</a></li>
     </ul>
   </nav>
 
-  <main class="articles-wrap">
-    <section class="articles-head">
-      <h1>すべての記事</h1>
-      <p class="articles-count" id="articlesCount">読み込み中...</p>
+  <main class="articles-wrap">    <section class="articles-head">
+      <h1>&#12377;&#12409;&#12390;&#12398;&#35352;&#20107;</h1>
+      <div class="articles-head-right">
+        <label class="articles-sort-wrap" for="sortOrder">
+          <span class="articles-sort-icon" aria-hidden="true">&#8645;</span>
+          <select class="articles-sort" id="sortOrder" aria-label="&#20006;&#12403;&#38918;">
+            <option value="new">&#26032;&#12375;&#12356;&#38918;</option>
+            <option value="old">&#21476;&#12356;&#38918;</option>
+          </select>
+        </label>
+        <label class="articles-view-wrap" for="viewMode">
+          <span class="articles-view-icon" aria-hidden="true">&#9638;</span>
+          <select class="articles-view" id="viewMode" aria-label="&#34920;&#31034;&#24418;&#24335;">
+            <option value="list">&#12522;&#12473;&#12488;&#22411;</option>
+            <option value="card">&#12459;&#12540;&#12489;&#22411;</option>
+          </select>
+        </label>
+        <p class="articles-count" id="articlesCount">&#35501;&#12415;&#36796;&#12415;&#20013;...</p>
+      </div>
     </section>
 
     <ul class="all-articles-list" id="allArticlesList"></ul>
@@ -138,11 +223,16 @@
   <script>
     const menuToggle = document.getElementById('menuToggle');
     const siteMenu = document.getElementById('siteMenu');
+    const menuLatestLink = document.getElementById('menuLatestLink');
     const allArticlesList = document.getElementById('allArticlesList');
     const articlesCount = document.getElementById('articlesCount');
     const prevPage = document.getElementById('prevPage');
     const nextPage = document.getElementById('nextPage');
     const pageInfo = document.getElementById('pageInfo');
+    const sortOrder = document.getElementById('sortOrder');
+    const viewMode = document.getElementById('viewMode');
+    const queryParams = new URLSearchParams(window.location.search);
+    const filterTag = String(queryParams.get('tag') || '').trim().toLowerCase().replace(/^#/, '');
 
     const PAGE_SIZE = 10;
     let allSpots = [];
@@ -154,6 +244,39 @@
       siteMenu.setAttribute('aria-hidden', String(!isOpen));
     });
 
+
+    function pickLatestAddedSpot(spots) {
+      if (!Array.isArray(spots) || spots.length === 0) {
+        return null;
+      }
+      return [...spots].sort((a, b) => {
+        const aTime = Date.parse(String(a && a.createdAt ? a.createdAt : ''));
+        const bTime = Date.parse(String(b && b.createdAt ? b.createdAt : ''));
+        const safeA = Number.isNaN(aTime) ? 0 : aTime;
+        const safeB = Number.isNaN(bTime) ? 0 : bTime;
+        if (safeA !== safeB) {
+          return safeB - safeA;
+        }
+        const aIssue = (Number(a && a.issueYear) || 0) * 100 + (Number(a && a.issueMonth) || 0);
+        const bIssue = (Number(b && b.issueYear) || 0) * 100 + (Number(b && b.issueMonth) || 0);
+        return bIssue - aIssue;
+      })[0];
+    }
+
+    function updateMenuLatestLink(spots) {
+      const latest = pickLatestAddedSpot(spots);
+      if (!latest) {
+        menuLatestLink.setAttribute('href', '#');
+        return;
+      }
+      const filePath = String(latest.filePath || '').trim();
+      const legacyUrl = String(latest.url || '').trim();
+      const linkPath = filePath || legacyUrl;
+      const viewerPath = linkPath
+        ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
+        : '#';
+      menuLatestLink.setAttribute('href', viewerPath);
+    }
     function escapeHtml(value) {
       return String(value || '')
         .replaceAll('&', '&amp;')
@@ -164,14 +287,60 @@
     }
 
     function getPageCount() {
-      return Math.max(1, Math.ceil(allSpots.length / PAGE_SIZE));
+      return Math.max(1, Math.ceil(getVisibleSpots().length / PAGE_SIZE));
+    }
+
+
+    function toSortKey(spot) {
+      const issueYear = Number(spot && spot.issueYear);
+      const issueMonth = Number(spot && spot.issueMonth);
+      const y = Number.isInteger(issueYear) ? issueYear : 0;
+      const m = Number.isInteger(issueMonth) ? issueMonth : 0;
+      return y * 100 + m;
+    }
+
+    function sortSpotsInPlace() {
+      const mode = sortOrder && sortOrder.value === 'old' ? 'old' : 'new';
+      allSpots.sort((a, b) => {
+        const issueDiff = toSortKey(a) - toSortKey(b);
+        if (issueDiff !== 0) {
+          return mode === 'old' ? issueDiff : -issueDiff;
+        }
+
+        const aDate = Date.parse(String(a && a.createdAt ? a.createdAt : ''));
+        const bDate = Date.parse(String(b && b.createdAt ? b.createdAt : ''));
+        const safeA = Number.isNaN(aDate) ? 0 : aDate;
+        const safeB = Number.isNaN(bDate) ? 0 : bDate;
+        if (safeA !== safeB) {
+          return mode === 'old' ? safeA - safeB : safeB - safeA;
+        }
+
+        return 0;
+      });
+    }
+
+    function applyViewMode() {
+      const mode = viewMode && viewMode.value === 'card' ? 'card' : 'list';
+      allArticlesList.classList.toggle('is-card', mode === 'card');
+    }
+
+    function getVisibleSpots() {
+      if (!filterTag) {
+        return allSpots;
+      }
+      return allSpots.filter((spot) => {
+        const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
+        return tags.some((tag) => String(tag || '').trim().toLowerCase().replace(/^#/, '').includes(filterTag));
+      });
     }
 
     function renderPage() {
+      applyViewMode();
+      const visibleSpots = getVisibleSpots();
       const pageCount = getPageCount();
       currentPage = Math.min(Math.max(1, currentPage), pageCount);
       const start = (currentPage - 1) * PAGE_SIZE;
-      const pageItems = allSpots.slice(start, start + PAGE_SIZE);
+      const pageItems = visibleSpots.slice(start, start + PAGE_SIZE);
 
       if (!pageItems.length) {
         allArticlesList.innerHTML = '<li>記事がありません。</li>';
@@ -197,7 +366,7 @@
       pageInfo.textContent = `${currentPage} / ${pageCount}`;
       prevPage.disabled = currentPage <= 1;
       nextPage.disabled = currentPage >= pageCount;
-      articlesCount.textContent = `全${allSpots.length}件（1ページ10件表示）`;
+      articlesCount.textContent = `${visibleSpots.length} / ${allSpots.length}`;
     }
 
     prevPage.addEventListener('click', () => {
@@ -214,6 +383,20 @@
       }
     });
 
+
+    if (sortOrder) {
+      sortOrder.addEventListener('change', () => {
+        sortSpotsInPlace();
+        currentPage = 1;
+        renderPage();
+      });
+    }
+
+    if (viewMode) {
+      viewMode.addEventListener('change', () => {
+        renderPage();
+      });
+    }
     async function loadAllSpots() {
       try {
         const response = await fetch('/api/spots');
@@ -229,9 +412,12 @@
           throw new Error(parsed.error || fallback);
         }
         allSpots = Array.isArray(parsed.spots) ? parsed.spots : [];
+        sortSpotsInPlace();
+        updateMenuLatestLink(allSpots);
         currentPage = 1;
         renderPage();
       } catch (error) {
+        menuLatestLink.setAttribute('href', '#');
         articlesCount.textContent = error.message || '記事一覧の読み込みに失敗しました。';
         allArticlesList.innerHTML = '<li>記事一覧の読み込みに失敗しました。</li>';
         prevPage.disabled = true;
