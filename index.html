@@ -32,15 +32,11 @@
   <nav class="site-menu" id="siteMenu" aria-hidden="true">
     <h2>メニュー</h2>
     <ul>
-      <li><a href="./index.html">トップ画面</a></li>
+      <li><a href="./index.html">トップ画面を表示</a></li>
       <li><a href="./articles.html">すべての記事</a></li>
-      <li><a href="#">最新号</a></li>
-      <li>
-        <a href="#">記事一覧</a>
-      </li>
-      <li><a href="#">バックナンバー</a></li>
-      <li><a href="#">広報誌について</a></li>
-      <li><a href="#">お問い合わせ</a></li>
+      <li><a id="menuLatestLink" href="#">最新号</a></li>
+      <li><a href="#aboutMagazineSection">ＡＢＯＵＴ　ＭＡＧＡＺＩＮ</a></li>
+      <li><a href="#questionSection">お問い合わせ</a></li>
     </ul>
   </nav>
 
@@ -57,8 +53,8 @@
     <section class="latest-issue">
       <h2 class="tab-title">最新号</h2>
       <div class="issue-card">
-        <p>BAIKO TIMES 2026年2月号</p>
-        <a href="#">最新号を読む</a>
+        <p id="latestIssueText">最新号情報を読み込み中...</p>
+        <a id="latestIssueLink" href="#">最新号を読む</a>
       </div>
     </section>
 
@@ -70,7 +66,7 @@
       </div>
     </section>
 
-    <section class="latest-issue">
+    <section class="latest-issue" id="aboutMagazineSection">
       <h2 class="tab-title">広報誌について</h2>
       <div class="issue-card about-magazine-card">
         <div class="about-magazine-inner">
@@ -86,7 +82,7 @@
       </div>
     </section>
 
-    <section class="latest-issue">
+    <section class="latest-issue" id="questionSection">
       <h2 class="tab-title">質問コーナー</h2>
       <div class="issue-card question-card">
         <p>気になることや感想を気軽に送ってください。</p>
@@ -148,6 +144,9 @@
     const addSpotButton = document.getElementById('addSpotButton');
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
+    const menuLatestLink = document.getElementById('menuLatestLink');
+    const latestIssueText = document.getElementById('latestIssueText');
+    const latestIssueLink = document.getElementById('latestIssueLink');
     const spotModal = document.getElementById('spotModal');
     const spotModalBackdrop = document.getElementById('spotModalBackdrop');
     const spotModalClose = document.getElementById('spotModalClose');
@@ -238,6 +237,50 @@
       }).join('');
     }
 
+    function pickLatestAddedSpot(spots) {
+      if (!Array.isArray(spots) || spots.length === 0) {
+        return null;
+      }
+      return [...spots].sort((a, b) => {
+        const aTime = Date.parse(String(a && a.createdAt ? a.createdAt : ''));
+        const bTime = Date.parse(String(b && b.createdAt ? b.createdAt : ''));
+        const safeA = Number.isNaN(aTime) ? 0 : aTime;
+        const safeB = Number.isNaN(bTime) ? 0 : bTime;
+        if (safeA !== safeB) {
+          return safeB - safeA;
+        }
+        const aIssue = (Number(a && a.issueYear) || 0) * 100 + (Number(a && a.issueMonth) || 0);
+        const bIssue = (Number(b && b.issueYear) || 0) * 100 + (Number(b && b.issueMonth) || 0);
+        return bIssue - aIssue;
+      })[0];
+    }
+
+    function updateLatestIssueSection(spots) {
+      const latest = pickLatestAddedSpot(spots);
+      if (!latest) {
+        latestIssueText.textContent = '表示できる最新記事がありません。';
+        latestIssueLink.setAttribute('href', '#');
+        menuLatestLink.setAttribute('href', '#');
+        return;
+      }
+
+      const issueYear = Number(latest.issueYear);
+      const issueMonth = Number(latest.issueMonth);
+      const issueText = Number.isInteger(issueYear) && Number.isInteger(issueMonth)
+        ? `BAIKO TIMES ${issueYear}年${issueMonth}月号`
+        : 'BAIKO TIMES 最新記事';
+      latestIssueText.textContent = issueText;
+
+      const filePath = String(latest.filePath || '').trim();
+      const legacyUrl = String(latest.url || '').trim();
+      const linkPath = filePath || legacyUrl;
+      const viewerPath = linkPath
+        ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
+        : '#';
+      latestIssueLink.setAttribute('href', viewerPath);
+      menuLatestLink.setAttribute('href', viewerPath);
+    }
+
     function parseTags(tagText) {
       const seen = new Set();
       return String(tagText || '')
@@ -316,8 +359,12 @@
       try {
         const spots = await fetchSpots();
         allSpots = spots;
+        updateLatestIssueSection(spots);
         applySearch();
       } catch (error) {
+        latestIssueText.textContent = '最新号の読み込みに失敗しました。';
+        latestIssueLink.setAttribute('href', '#');
+        menuLatestLink.setAttribute('href', '#');
         spotsEmpty.style.display = 'block';
         spotsEmpty.textContent = error.message || '記事一覧の読み込みに失敗しました。';
       }
