@@ -50,18 +50,34 @@
   </section>
 
   <main class="content-wrap">
-    <section class="latest-issue">
-      <h2 class="tab-title">最新号</h2>
-      <div class="issue-card">
-        <a id="latestIssueLink" href="#">最新号を読む</a>
-      </div>
-    </section>
+    <section class="latest-issue latest-issue-showcase">
+      <div class="issue-card issue-card-latest">
+        <div class="latest-head">
+          <p class="latest-kicker">LATEST ISSUE</p>
+          <h2 class="latest-ja">最新号</h2>
+        </div>
 
-    <section class="latest-issue">
-      <h2 class="tab-title">おすすめの記事</h2>
-      <div class="issue-card">
-        <ul class="spots-list" id="spotsList"></ul>
-        <p class="spots-empty" id="spotsEmpty">表示できるおすすめ記事がありません。</p>
+        <article class="latest-feature">
+          <a id="latestIssueLink" class="latest-cover-link" href="#">
+            <img id="latestIssueCover" src="./uploads/1772641750165-1.svg" alt="最新号表紙">
+          </a>
+          <div class="latest-meta">
+            <p id="latestIssueDate" class="latest-date">--</p>
+            <h3 id="latestIssueTitle" class="latest-title">最新号を読み込み中...</h3>
+            <a id="latestIssueReadButton" class="latest-read-btn" href="#">読む</a>
+          </div>
+        </article>
+
+        <div class="back-number-area">
+          <div class="back-number-head">
+            <p class="back-number-kicker">BACK NUMBER</p>
+            <h3 class="back-number-ja">過去号</h3>
+          </div>
+          <ul class="back-number-grid" id="backNumberList"></ul>
+          <div class="back-number-more-wrap">
+            <a class="back-number-more-btn" href="./articles.html">もっと見る</a>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -149,15 +165,18 @@
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
     const menuLatestLink = document.getElementById('menuLatestLink');
+    const latestIssueDate = document.getElementById('latestIssueDate');
+    const latestIssueTitle = document.getElementById('latestIssueTitle');
     const latestIssueLink = document.getElementById('latestIssueLink');
+    const latestIssueReadButton = document.getElementById('latestIssueReadButton');
+    const latestIssueCover = document.getElementById('latestIssueCover');
+    const backNumberList = document.getElementById('backNumberList');
     const spotModal = document.getElementById('spotModal');
     const spotModalBackdrop = document.getElementById('spotModalBackdrop');
     const spotModalClose = document.getElementById('spotModalClose');
     const questionForm = document.getElementById('questionForm');
     const questionSubmit = document.getElementById('questionSubmit');
     const questionStatus = document.getElementById('questionStatus');
-    const spotsList = document.getElementById('spotsList');
-    const spotsEmpty = document.getElementById('spotsEmpty');
     const spotForm = document.getElementById('spotForm');
     const spotSubmit = document.getElementById('spotSubmit');
     const spotStatus = document.getElementById('spotStatus');
@@ -205,38 +224,55 @@
         .replaceAll("'", '&#39;');
     }
 
-    function renderRecommendedSpot(spots) {
+    function toSortKey(spot) {
+      const issueYear = Number(spot && spot.issueYear);
+      const issueMonth = Number(spot && spot.issueMonth);
+      const y = Number.isInteger(issueYear) ? issueYear : 0;
+      const m = Number.isInteger(issueMonth) ? issueMonth : 0;
+      return y * 100 + m;
+    }
+
+    function sortSpotsLatestFirst(spots) {
+      return [...spots].sort((a, b) => {
+        const issueDiff = toSortKey(b) - toSortKey(a);
+        if (issueDiff !== 0) {
+          return issueDiff;
+        }
+        const aTime = Date.parse(String(a && a.createdAt ? a.createdAt : ''));
+        const bTime = Date.parse(String(b && b.createdAt ? b.createdAt : ''));
+        const safeA = Number.isNaN(aTime) ? 0 : aTime;
+        const safeB = Number.isNaN(bTime) ? 0 : bTime;
+        return safeB - safeA;
+      });
+    }
+
+    function buildViewerPath(spot) {
+      const filePath = String(spot && spot.filePath ? spot.filePath : '').trim();
+      const legacyUrl = String(spot && spot.url ? spot.url : '').trim();
+      const linkPath = filePath || legacyUrl;
+      return linkPath
+        ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
+        : '#';
+    }
+
+    function renderBackNumbers(spots) {
       if (!Array.isArray(spots) || spots.length === 0) {
-        spotsList.innerHTML = '';
-        spotsEmpty.style.display = 'block';
+        backNumberList.innerHTML = '';
         return;
       }
 
-      const picked = spots[Math.floor(Math.random() * spots.length)];
-      spotsEmpty.style.display = 'none';
-      spotsList.innerHTML = [picked].map((spot) => {
+      const sorted = sortSpotsLatestFirst(spots);
+      const backNumbers = sorted.slice(1, 5);
+      const fallbackCover = './uploads/1772641750165-1.svg';
+      backNumberList.innerHTML = backNumbers.map((spot) => {
         const title = escapeHtml(String(spot.title || ''));
-        const filePath = String(spot.filePath || '').trim();
-        const legacyUrl = String(spot.url || '').trim();
-        const linkPath = filePath || legacyUrl;
-        const summary = escapeHtml(String(spot.summary || ''));
         const issueYear = Number(spot.issueYear);
         const issueMonth = Number(spot.issueMonth);
         const issueText = Number.isInteger(issueYear) && Number.isInteger(issueMonth)
           ? `${issueYear}年${issueMonth}月号`
           : '掲載号未設定';
-        const tags = Array.isArray(spot.tags) ? spot.tags : [];
-        const tagsMarkup = tags.length
-          ? `<p class="spots-tags">${tags.map((tag) => `<span>#${escapeHtml(String(tag))}</span>`).join(' ')}</p>`
-          : '';
-        const viewerPath = linkPath
-          ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
-          : '';
-        const titleMarkup = viewerPath
-          ? `<a href="${escapeHtml(viewerPath)}">${title}</a>`
-          : `<span>${title}</span>`;
-        const summaryMarkup = summary ? `<p>${summary}</p>` : '';
-        return `<li><p class="spots-issue">${issueText}</p>${titleMarkup}${tagsMarkup}${summaryMarkup}</li>`;
+        const viewerPath = buildViewerPath(spot);
+        return `<li class="back-number-card"><a href="${escapeHtml(viewerPath)}"><span class="back-number-thumb"><img src="${fallbackCover}" alt="${title}"></span><span class="back-number-label">${escapeHtml(issueText)}</span></a></li>`;
       }).join('');
     }
 
@@ -261,13 +297,24 @@
     function updateLatestIssueSection(spots) {
       const latest = pickLatestAddedSpot(spots);
       if (!latest) {
+        latestIssueDate.textContent = '--';
+        latestIssueTitle.textContent = '表示できる最新記事がありません。';
+        latestIssueCover.setAttribute('src', './uploads/1772641750165-1.svg');
         latestIssueLink.setAttribute('href', '#');
+        latestIssueReadButton.setAttribute('href', '#');
         menuLatestLink.setAttribute('href', '#');
         return;
       }
 
       const issueYear = Number(latest.issueYear);
       const issueMonth = Number(latest.issueMonth);
+
+      const issueText = Number.isInteger(issueYear) && Number.isInteger(issueMonth)
+        ? `${issueYear}年${issueMonth}月号`
+        : '最新号';
+      latestIssueDate.textContent = issueText;
+      latestIssueTitle.textContent = String(latest.title || 'BAIKO TIMES 最新号');
+      latestIssueCover.setAttribute('src', './uploads/1772641750165-1.svg');
 
       const filePath = String(latest.filePath || '').trim();
       const legacyUrl = String(latest.url || '').trim();
@@ -276,6 +323,7 @@
         ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
         : '#';
       latestIssueLink.setAttribute('href', viewerPath);
+      latestIssueReadButton.setAttribute('href', viewerPath);
       menuLatestLink.setAttribute('href', viewerPath);
     }
 
@@ -323,7 +371,7 @@
     function applySearch() {
       const q = String(searchInput.value || '').trim().toLowerCase();
       if (!q) {
-        renderRecommendedSpot(allSpots);
+        renderBackNumbers(allSpots);
         return;
       }
 
@@ -334,7 +382,7 @@
         const issue = `${spot.issueYear || ''}年${spot.issueMonth || ''}月号`.toLowerCase();
         return title.includes(q) || summary.includes(q) || tags.includes(q) || issue.includes(q);
       });
-      renderRecommendedSpot(filtered);
+      renderBackNumbers(filtered);
     }
 
     async function fetchSpots() {
@@ -360,10 +408,13 @@
         updateLatestIssueSection(spots);
         applySearch();
       } catch (error) {
+        latestIssueDate.textContent = '--';
+        latestIssueTitle.textContent = '最新号の読み込みに失敗しました。';
+        latestIssueCover.setAttribute('src', './uploads/1772641750165-1.svg');
         latestIssueLink.setAttribute('href', '#');
+        latestIssueReadButton.setAttribute('href', '#');
         menuLatestLink.setAttribute('href', '#');
-        spotsEmpty.style.display = 'block';
-        spotsEmpty.textContent = error.message || '記事一覧の読み込みに失敗しました。';
+        backNumberList.innerHTML = '';
       }
     }
 

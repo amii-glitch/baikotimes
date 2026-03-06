@@ -95,42 +95,62 @@
       padding: 0;
       list-style: none;
       display: grid;
-      gap: 10px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
     }
 
     .all-articles-list li {
       background: #fff;
       border-radius: 12px;
-      padding: 14px 16px;
-    }
-
-    .all-articles-list.is-card {
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 14px;
-    }
-
-    .all-articles-list.is-card li {
       border: 1px solid var(--line);
-      height: 100%;
+      overflow: hidden;
+      box-shadow: 0 5px 16px rgba(17, 39, 89, 0.1);
+    }
+
+    .all-articles-list .article-card-link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .all-articles-list .article-card-thumb {
+      display: block;
+      overflow: hidden;
+    }
+
+    .all-articles-list .article-card-thumb img {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .all-articles-list .article-card-link:hover .article-card-thumb img {
+      transform: scale(1.05);
+    }
+
+    .all-articles-list .article-card-meta {
+      padding: 12px 12px 14px;
+      text-align: center;
     }
 
     .all-articles-list .issue {
-      margin: 0 0 4px;
+      margin: 0;
       color: var(--muted);
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
     }
 
     .all-articles-list .title {
-      margin: 0;
+      margin: 6px 0 0;
       font-weight: 700;
       color: var(--text);
+      font-size: 0.98rem;
     }
 
-    .all-articles-list .meta {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 0.9rem;
+    .articles-view-wrap {
+      display: none;
     }
 
     .pager {
@@ -162,6 +182,13 @@
       text-align: center;
       color: var(--muted);
       font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .all-articles-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
     }
   </style>
 </head>
@@ -234,7 +261,7 @@
     const queryParams = new URLSearchParams(window.location.search);
     const filterTag = String(queryParams.get('tag') || '').trim().toLowerCase().replace(/^#/, '');
 
-    const PAGE_SIZE = 10;
+    const PAGE_SIZE = 12;
     let allSpots = [];
     let currentPage = 1;
 
@@ -320,8 +347,7 @@
     }
 
     function applyViewMode() {
-      const mode = viewMode && viewMode.value === 'card' ? 'card' : 'list';
-      allArticlesList.classList.toggle('is-card', mode === 'card');
+      allArticlesList.classList.add('is-card');
     }
 
     function getVisibleSpots() {
@@ -353,13 +379,14 @@
             ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
             : '';
           const title = escapeHtml(spot.title || '');
-          const titleMarkup = viewerPath ? `<a href="${escapeHtml(viewerPath)}">${title}</a>` : title;
           const issue = Number.isInteger(Number(spot.issueYear)) && Number.isInteger(Number(spot.issueMonth))
             ? `${spot.issueYear}年${spot.issueMonth}月号`
             : '掲載号未設定';
-          const tags = Array.isArray(spot.tags) ? spot.tags : [];
-          const meta = tags.length ? tags.map((tag) => `#${escapeHtml(tag)}`).join(' ') : '';
-          return `<li><p class="issue">${issue}</p><p class="title">${titleMarkup}</p><p class="meta">${meta}</p></li>`;
+          const imagePath = String(
+            spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || '/uploads/1772641750165-1.svg'
+          ).trim();
+          const href = viewerPath || '#';
+          return `<li><a class="article-card-link" href="${escapeHtml(href)}"><span class="article-card-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="article-card-meta"><p class="issue">${issue}</p><p class="title">${title}</p></span></a></li>`;
         }).join('');
       }
 
