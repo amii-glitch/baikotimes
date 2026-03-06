@@ -11,7 +11,7 @@
 <body>
   <header class="top-header">
     <div class="header-row">
-      <h1>BAIKO TIMES</h1>
+      <h1 class="site-title">BAIKO TIMES<span class="site-title-sub">学生制作広報誌</span></h1>
       <div class="header-actions">
         <button class="reload-button" id="reloadButton" type="button" aria-label="ページを更新">再読み込み</button>
         <button class="add-spot-button" id="addSpotButton" type="button" aria-label="記事を追加">＋</button>
@@ -32,6 +32,8 @@
   <nav class="site-menu" id="siteMenu" aria-hidden="true">
     <h2>メニュー</h2>
     <ul>
+      <li><a href="./index.html">トップ画面</a></li>
+      <li><a href="./articles.html">すべての記事</a></li>
       <li><a href="#">最新号</a></li>
       <li>
         <a href="#">記事一覧</a>
@@ -43,10 +45,12 @@
   </nav>
 
   <section class="hero" aria-label="BAIKO TIMES トップビジュアル">
-    <div class="hero-copy">
-      <p class="hero-kicker">学生制作広報誌</p>
-      <p class="hero-title">BAIKO TIMES</p>
-    </div>
+    <video class="hero-video hero-video-base" autoplay muted playsinline loop preload="auto">
+      <source src="./uploads/baiko-sakura-bg.mp4" type="video/mp4" />
+    </video>
+    <video class="hero-video hero-video-overlay" autoplay muted playsinline preload="auto">
+      <source src="./uploads/baiko-spring-overlay.mp4" type="video/mp4" />
+    </video>
   </section>
 
   <main class="content-wrap">
@@ -59,17 +63,26 @@
     </section>
 
     <section class="latest-issue">
-      <h2 class="tab-title">おすすめの投稿</h2>
+      <h2 class="tab-title">おすすめの記事</h2>
       <div class="issue-card">
         <ul class="spots-list" id="spotsList"></ul>
-        <p class="spots-empty" id="spotsEmpty">まだ記事が登録されていません。</p>
+        <p class="spots-empty" id="spotsEmpty">表示できるおすすめ記事がありません。</p>
       </div>
     </section>
 
     <section class="latest-issue">
       <h2 class="tab-title">広報誌について</h2>
       <div class="issue-card about-magazine-card">
-        <p>BAIKO TIMESは、大学の出来事や在学生の活動、進路情報を分かりやすく届ける広報誌です。</p>
+        <div class="about-magazine-inner">
+          <p class="about-magazine-en">ABOUT MAGAZINE</p>
+          <h3 class="about-magazine-ja">広報誌について</h3>
+          <div class="about-magazine-rule" aria-hidden="true"></div>
+          <div class="about-magazine-body">
+            <p>学生広報誌「BAIKO TIMES」は、梅光学院大学の学生が中心となって制作している広報誌です。</p>
+            <p>学生スタッフが企画・取材・編集を行い、学生生活や大学イベント、授業や活動の様子など、梅光学院大学の魅力を学生の視点から発信しています。</p>
+            <p>学生だからこそ伝えられるリアルな大学の姿を、在学生・受験生・地域の方々へ届けています。</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -190,15 +203,16 @@
         .replaceAll("'", '&#39;');
     }
 
-    function renderSpots(spots) {
+    function renderRecommendedSpot(spots) {
       if (!Array.isArray(spots) || spots.length === 0) {
         spotsList.innerHTML = '';
         spotsEmpty.style.display = 'block';
         return;
       }
 
+      const picked = spots[Math.floor(Math.random() * spots.length)];
       spotsEmpty.style.display = 'none';
-      spotsList.innerHTML = spots.map((spot) => {
+      spotsList.innerHTML = [picked].map((spot) => {
         const title = escapeHtml(String(spot.title || ''));
         const filePath = String(spot.filePath || '').trim();
         const legacyUrl = String(spot.url || '').trim();
@@ -213,8 +227,11 @@
         const tagsMarkup = tags.length
           ? `<p class="spots-tags">${tags.map((tag) => `<span>#${escapeHtml(String(tag))}</span>`).join(' ')}</p>`
           : '';
-        const titleMarkup = linkPath
-          ? `<a href="${escapeHtml(linkPath)}" target="_blank" rel="noopener noreferrer">${title}</a>`
+        const viewerPath = linkPath
+          ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
+          : '';
+        const titleMarkup = viewerPath
+          ? `<a href="${escapeHtml(viewerPath)}">${title}</a>`
           : `<span>${title}</span>`;
         const summaryMarkup = summary ? `<p>${summary}</p>` : '';
         return `<li><p class="spots-issue">${issueText}</p>${titleMarkup}${tagsMarkup}${summaryMarkup}</li>`;
@@ -265,7 +282,7 @@
     function applySearch() {
       const q = String(searchInput.value || '').trim().toLowerCase();
       if (!q) {
-        renderSpots(allSpots);
+        renderRecommendedSpot(allSpots);
         return;
       }
 
@@ -276,7 +293,7 @@
         const issue = `${spot.issueYear || ''}年${spot.issueMonth || ''}月号`.toLowerCase();
         return title.includes(q) || summary.includes(q) || tags.includes(q) || issue.includes(q);
       });
-      renderSpots(filtered);
+      renderRecommendedSpot(filtered);
     }
 
     async function fetchSpots() {

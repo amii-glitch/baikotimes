@@ -18,6 +18,7 @@ const MIME_TYPES = {
   '.jpeg': 'image/jpeg',
   '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
+  '.pdf': 'application/pdf',
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8'
 };
@@ -97,7 +98,11 @@ function ensureUploadsDir() {
 
 function readSpots() {
   ensureSpotsFile();
-  const raw = fs.readFileSync(SPOTS_PATH, 'utf8');
+  let raw = fs.readFileSync(SPOTS_PATH, 'utf8');
+  // PowerShell's UTF-8 with BOM can break JSON.parse in Node.
+  if (raw.charCodeAt(0) === 0xfeff) {
+    raw = raw.slice(1);
+  }
   try {
     const parsed = JSON.parse(raw || '[]');
     return Array.isArray(parsed) ? parsed : [];
@@ -339,10 +344,15 @@ const server = http.createServer((req, res) => {
 
       const ext = path.extname(target).toLowerCase();
       const type = MIME_TYPES[ext] || 'application/octet-stream';
-      res.writeHead(200, {
+      const headers = {
         'Content-Type': type,
         'Cache-Control': 'no-store'
-      });
+      };
+      if (ext === '.pdf') {
+        const fileName = path.basename(target);
+        headers['Content-Disposition'] = `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+      }
+      res.writeHead(200, headers);
       res.end(data);
     });
   });

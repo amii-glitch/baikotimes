@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>すべての記事 | BAIKO TIMES</title>
+  <link rel="stylesheet" href="./css/style.css" />
+  <style>
+    .articles-wrap {
+      width: min(1100px, 94%);
+      margin: 24px auto 40px;
+    }
+
+    .articles-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .articles-head h1 {
+      margin: 0;
+      font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+      color: var(--text);
+    }
+
+    .articles-count {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .all-articles-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .all-articles-list li {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .all-articles-list .issue {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .all-articles-list .title {
+      margin: 0;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .all-articles-list .meta {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .pager {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pager button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      padding: 8px 12px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .pager button[disabled] {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .pager .current {
+      min-width: 8ch;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header class="top-header">
+    <div class="header-row">
+      <h1 class="site-title">BAIKO TIMES<span class="site-title-sub">学生制作広報誌</span></h1>
+      <div class="header-actions">
+        <button class="menu-toggle" id="menuToggle" aria-label="メニューを開く" aria-expanded="false" aria-controls="siteMenu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="site-menu" id="siteMenu" aria-hidden="true">
+    <h2>メニュー</h2>
+    <ul>
+      <li><a href="./index.html">トップ画面</a></li>
+      <li><a href="./articles.html">すべての記事</a></li>
+    </ul>
+  </nav>
+
+  <main class="articles-wrap">
+    <section class="articles-head">
+      <h1>すべての記事</h1>
+      <p class="articles-count" id="articlesCount">読み込み中...</p>
+    </section>
+
+    <ul class="all-articles-list" id="allArticlesList"></ul>
+
+    <nav class="pager" aria-label="ページ送り">
+      <button id="prevPage" type="button">前へ</button>
+      <span class="current" id="pageInfo">1 / 1</span>
+      <button id="nextPage" type="button">次へ</button>
+    </nav>
+  </main>
+
+  <script>
+    const menuToggle = document.getElementById('menuToggle');
+    const siteMenu = document.getElementById('siteMenu');
+    const allArticlesList = document.getElementById('allArticlesList');
+    const articlesCount = document.getElementById('articlesCount');
+    const prevPage = document.getElementById('prevPage');
+    const nextPage = document.getElementById('nextPage');
+    const pageInfo = document.getElementById('pageInfo');
+
+    const PAGE_SIZE = 10;
+    let allSpots = [];
+    let currentPage = 1;
+
+    menuToggle.addEventListener('click', () => {
+      const isOpen = siteMenu.classList.toggle('is-open');
+      menuToggle.setAttribute('aria-expanded', String(isOpen));
+      siteMenu.setAttribute('aria-hidden', String(!isOpen));
+    });
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function getPageCount() {
+      return Math.max(1, Math.ceil(allSpots.length / PAGE_SIZE));
+    }
+
+    function renderPage() {
+      const pageCount = getPageCount();
+      currentPage = Math.min(Math.max(1, currentPage), pageCount);
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const pageItems = allSpots.slice(start, start + PAGE_SIZE);
+
+      if (!pageItems.length) {
+        allArticlesList.innerHTML = '<li>記事がありません。</li>';
+      } else {
+        allArticlesList.innerHTML = pageItems.map((spot) => {
+          const filePath = String(spot.filePath || '').trim();
+          const legacyUrl = String(spot.url || '').trim();
+          const linkPath = filePath || legacyUrl;
+          const viewerPath = linkPath
+            ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
+            : '';
+          const title = escapeHtml(spot.title || '');
+          const titleMarkup = viewerPath ? `<a href="${escapeHtml(viewerPath)}">${title}</a>` : title;
+          const issue = Number.isInteger(Number(spot.issueYear)) && Number.isInteger(Number(spot.issueMonth))
+            ? `${spot.issueYear}年${spot.issueMonth}月号`
+            : '掲載号未設定';
+          const tags = Array.isArray(spot.tags) ? spot.tags : [];
+          const meta = tags.length ? tags.map((tag) => `#${escapeHtml(tag)}`).join(' ') : '';
+          return `<li><p class="issue">${issue}</p><p class="title">${titleMarkup}</p><p class="meta">${meta}</p></li>`;
+        }).join('');
+      }
+
+      pageInfo.textContent = `${currentPage} / ${pageCount}`;
+      prevPage.disabled = currentPage <= 1;
+      nextPage.disabled = currentPage >= pageCount;
+      articlesCount.textContent = `全${allSpots.length}件（1ページ10件表示）`;
+    }
+
+    prevPage.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage -= 1;
+        renderPage();
+      }
+    });
+
+    nextPage.addEventListener('click', () => {
+      if (currentPage < getPageCount()) {
+        currentPage += 1;
+        renderPage();
+      }
+    });
+
+    async function loadAllSpots() {
+      try {
+        const response = await fetch('/api/spots');
+        const raw = await response.text();
+        let parsed = {};
+        try {
+          parsed = raw ? JSON.parse(raw) : {};
+        } catch {
+          parsed = {};
+        }
+        if (!response.ok) {
+          const fallback = raw ? `記事一覧の取得に失敗しました (${response.status})` : '記事一覧の取得に失敗しました。';
+          throw new Error(parsed.error || fallback);
+        }
+        allSpots = Array.isArray(parsed.spots) ? parsed.spots : [];
+        currentPage = 1;
+        renderPage();
+      } catch (error) {
+        articlesCount.textContent = error.message || '記事一覧の読み込みに失敗しました。';
+        allArticlesList.innerHTML = '<li>記事一覧の読み込みに失敗しました。</li>';
+        prevPage.disabled = true;
+        nextPage.disabled = true;
+      }
+    }
+
+    loadAllSpots();
+  </script>
+</body>
+</html>

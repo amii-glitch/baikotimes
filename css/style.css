@@ -1,5 +1,5 @@
 ﻿:root {
-  --bg: #f5f7ff;
+  --bg: #ffffff;
   --surface: #ffffff;
   --text: #1f2d3d;
   --muted: #5f6f81;
@@ -20,7 +20,7 @@ body {
   margin: 0;
   font-family: "Segoe UI", "Yu Gothic UI", sans-serif;
   color: var(--text);
-  background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 100%);
+  background: #ffffff;
   line-height: 1.8;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
@@ -56,6 +56,20 @@ body.is-modal-open {
 h1, h2 {
   margin: 0;
   line-height: 1.3;
+}
+
+.site-title {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  gap: 2px;
+}
+
+.site-title-sub {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.06em;
 }
 
 .search-form {
@@ -186,28 +200,28 @@ a:hover {
 }
 
 .content-wrap {
-  width: min(1200px, 94%);
-  margin: 24px auto;
+  width: 100%;
+  margin: 24px 0;
   color: var(--muted);
 }
 
 .latest-issue {
-  max-width: 860px;
+  width: 100%;
+  max-width: none;
+}
+
+.latest-issue + .latest-issue {
+  margin-top: 16px;
 }
 
 .tab-title {
-  display: inline-block;
-  padding: 10px 18px;
-  background: var(--accent);
-  color: #fff;
-  border-radius: 12px 12px 0 0;
-  font-size: 1.05rem;
+  display: none;
 }
 
 .issue-card {
   margin-top: 0;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 0 12px 12px 12px;
   padding: 18px;
 }
@@ -217,16 +231,37 @@ a:hover {
 }
 
 .hero {
-  width: 100vw;
+  width: min(100vw, calc(100dvh * 16 / 9));
   aspect-ratio: 16 / 9;
+  height: auto;
   border-radius: 0;
   overflow: hidden;
-  margin: 0 calc(50% - 50vw) 16px;
+  margin: 0 auto 16px;
   border: 0;
-  background: linear-gradient(135deg, #1da85f 0%, #0f6fff 55%, #00a8c7 100%);
-  display: flex;
-  align-items: flex-end;
-  padding: clamp(20px, 4vw, 56px);
+  background: transparent;
+  display: block;
+  position: relative;
+  padding: 0;
+  line-height: 0;
+}
+
+.hero-video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+}
+
+.hero-video-base {
+  z-index: 1;
+}
+
+.hero-video-overlay {
+  z-index: 2;
+  opacity: 0.88;
 }
 
 .hero-copy {
@@ -267,19 +302,80 @@ a:hover {
 }
 
 .about-magazine-card {
-  aspect-ratio: 16 / 9;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  background: #f5f3ee;
+  border: 0;
+  border-radius: 0 12px 12px 12px;
+  padding: clamp(44px, 7vw, 86px) clamp(20px, 6vw, 76px);
+}
+
+.about-magazine-inner {
+  width: min(760px, 100%);
+  margin: 0 auto;
   text-align: center;
 }
 
-.about-magazine-card p {
+.about-magazine-en {
   margin: 0;
-  max-width: 70ch;
+  color: #4f6f52;
+  font-size: clamp(1.2rem, 2.2vw, 1.9rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+
+.about-magazine-ja {
+  margin: 12px 0 0;
+  color: #333333;
+  font-size: clamp(1rem, 1.7vw, 1.3rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.about-magazine-rule {
+  width: min(500px, 100%);
+  height: 1px;
+  margin: 26px auto 30px;
+  background: linear-gradient(90deg, rgba(220, 220, 220, 0), #dcdcdc 14%, #dcdcdc 86%, rgba(220, 220, 220, 0));
+}
+
+.about-magazine-body {
+  width: min(64ch, 100%);
+  margin: 0 auto;
+  color: #333333;
+  text-align: left;
+}
+
+.about-magazine-body p {
+  margin: 0;
+  font-size: clamp(0.98rem, 1.25vw, 1.08rem);
+  line-height: 2;
+}
+
+.about-magazine-body p + p {
+  margin-top: 1.2em;
+}
+
+@media (max-width: 900px) {
+  .about-magazine-card {
+    padding: 38px 18px 44px;
+  }
+
+  .about-magazine-rule {
+    margin: 22px auto 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .about-magazine-card {
+    padding: 32px 16px 38px;
+  }
+
+  .about-magazine-en {
+    letter-spacing: 0.16em;
+  }
+
+  .about-magazine-body p {
+    line-height: 1.9;
+  }
 }
 
 .question-card p {
@@ -328,10 +424,15 @@ a:hover {
 }
 
 .question-status {
-  margin: 2px 0 0;
-  min-height: 1.6em;
+  margin: 0;
+  min-height: 0;
   color: #0b6b2f;
   font-weight: 600;
+}
+
+.question-status:not(:empty) {
+  margin-top: 2px;
+  min-height: 1.6em;
 }
 
 .question-status.is-error {
@@ -483,7 +584,7 @@ a:hover {
 .embedded-about iframe {
   display: block;
   width: 100%;
-  min-height: 1100px;
+  min-height: 760px;
   border: 0;
   background: #fff;
 }

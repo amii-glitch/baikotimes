@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>記事ビューア | BAIKO TIMES</title>
+  <style>
+    :root {
+      --line: #d9e2f0;
+      --surface: #ffffff;
+      --text: #1f2d3d;
+      --accent: #0f6fff;
+      --bg: #f5f7ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Yu Gothic UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .back-btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .frame-wrap {
+      width: min(1200px, 96%);
+      margin: 12px auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: calc(100vh - 92px);
+    }
+
+    .article-view {
+      width: 100%;
+      min-height: calc(100vh - 92px);
+      border: 0;
+      display: block;
+      background: #fff;
+    }
+
+    .pdf-status {
+      margin: 0;
+      padding: 14px 16px;
+      color: #4f5f73;
+      border-bottom: 1px solid var(--line);
+      font-weight: 600;
+      background: #f8fbff;
+    }
+
+    .pdf-pages {
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+      justify-items: center;
+      background: #f2f5fb;
+    }
+
+    .pdf-page {
+      display: block;
+      width: min(100%, 980px);
+      height: auto;
+      background: #fff;
+      border: 1px solid #d6e0ef;
+      border-radius: 10px;
+      box-shadow: 0 3px 14px rgba(18, 38, 72, 0.08);
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <button class="back-btn" id="backButton" type="button">メイン画面へ戻る</button>
+    <p class="title">記事ビューア</p>
+  </header>
+  <main class="frame-wrap">
+    <div id="articleHost"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    const backButton = document.getElementById('backButton');
+    const articleHost = document.getElementById('articleHost');
+    const params = new URLSearchParams(window.location.search);
+    const src = params.get('src') || '';
+
+    async function renderPdfInline(pdfPath) {
+      const pdfjsLib = window.pdfjsLib;
+      if (!pdfjsLib) {
+        articleHost.innerHTML = `<p style="padding:16px;font-family:sans-serif;">PDF表示エンジンの読み込みに失敗しました。<a href="${pdfPath}" target="_blank" rel="noopener noreferrer">こちら</a>から開いてください。</p>`;
+        return;
+      }
+
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      articleHost.innerHTML = '<p class="pdf-status" id="pdfStatus">PDFを読み込み中...</p><div class="pdf-pages" id="pdfPages"></div>';
+
+      const statusEl = document.getElementById('pdfStatus');
+      const pagesEl = document.getElementById('pdfPages');
+
+      try {
+        const loadingTask = pdfjsLib.getDocument({ url: pdfPath });
+        const pdf = await loadingTask.promise;
+        statusEl.textContent = `全${pdf.numPages}ページ`;
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
+          // eslint-disable-next-line no-await-in-loop
+          const page = await pdf.getPage(pageNum);
+          const baseViewport = page.getViewport({ scale: 1 });
+          const targetWidth = Math.max(320, Math.min(980, pagesEl.clientWidth - 24));
+          const scale = targetWidth / baseViewport.width;
+          const viewport = page.getViewport({ scale });
+
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d', { alpha: false });
+          canvas.className = 'pdf-page';
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          canvas.setAttribute('aria-label', `${pageNum}ページ目`);
+          pagesEl.appendChild(canvas);
+
+          // eslint-disable-next-line no-await-in-loop
+          await page.render({
+            canvasContext: context,
+            viewport
+          }).promise;
+        }
+      } catch (error) {
+        statusEl.textContent = 'PDFの表示に失敗しました。';
+        pagesEl.innerHTML = `<p style="margin:0;color:#4f5f73;">ブラウザで開く: <a href="${pdfPath}" target="_blank" rel="noopener noreferrer">PDFを開く</a></p>`;
+      }
+    }
+
+    const isLocalPath = src.startsWith('/uploads/') || src.startsWith('/article/');
+    if (!isLocalPath) {
+      articleHost.innerHTML = '<p style="padding:16px;font-family:sans-serif;">表示できる記事リンクではありません。</p>';
+    } else {
+      const safeSrc = encodeURI(src);
+      const isPdf = /\.pdf($|\?)/i.test(safeSrc);
+      if (isPdf) {
+        renderPdfInline(safeSrc);
+      } else {
+        articleHost.innerHTML = `<iframe class="article-view" title="記事" src="${safeSrc}"></iframe>`;
+      }
+    }
+
+    backButton.addEventListener('click', () => {
+      window.location.href = '/index.html';
+    });
+  </script>
+</body>
+</html>
