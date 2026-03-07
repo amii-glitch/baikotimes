@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>BAIKO TIMES</title>
   <link rel="stylesheet" href="./css/style.css" />
+  <script src="./js/admin-mode.js" defer></script>
 </head>
 <body>
   <header class="top-header">
@@ -182,6 +183,7 @@
     const spotStatus = document.getElementById('spotStatus');
     const spotTagAiButton = document.getElementById('spotTagAiButton');
     let allSpots = [];
+    const ADMIN_HASH = '#MPJ3';
 
     menuToggle.addEventListener('click', () => {
       const isOpen = siteMenu.classList.toggle('is-open');
@@ -193,7 +195,23 @@
       window.location.reload();
     });
 
+    function isAdminMode() {
+      return String(window.location.hash || '').trim().toUpperCase() === ADMIN_HASH;
+    }
+
+    function syncAdminEditMode() {
+      const enabled = isAdminMode();
+      addSpotButton.hidden = !enabled;
+      reloadButton.hidden = !enabled;
+      if (!enabled) {
+        closeSpotModal();
+      }
+    }
+
     function openSpotModal() {
+      if (!isAdminMode()) {
+        return;
+      }
       spotModal.hidden = false;
       document.body.classList.add('is-modal-open');
       setTimeout(() => {
@@ -209,11 +227,13 @@
     addSpotButton.addEventListener('click', openSpotModal);
     spotModalClose.addEventListener('click', closeSpotModal);
     spotModalBackdrop.addEventListener('click', closeSpotModal);
+    window.addEventListener('hashchange', syncAdminEditMode);
     window.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !spotModal.hidden) {
         closeSpotModal();
       }
     });
+    syncAdminEditMode();
 
     function escapeHtml(value) {
       return value

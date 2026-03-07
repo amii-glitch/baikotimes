@@ -7,6 +7,8 @@ const ROOT = process.cwd();
 const MAIL_TO = 'manapaioniajapan@gmail.com';
 const SPOTS_PATH = path.join(ROOT, 'spots.json');
 const UPLOADS_DIR = path.join(ROOT, 'uploads');
+const VIEW_STATS_PATH = path.join(ROOT, 'view-stats.json');
+const ADMIN_CODE = 'MPJ3';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -37,6 +39,48 @@ function send404(res) {
     'Cache-Control': 'no-store'
   });
   res.end('404 Not Found');
+}
+
+function ensureViewStatsFile() {
+  if (!fs.existsSync(VIEW_STATS_PATH)) {
+    fs.writeFileSync(
+      VIEW_STATS_PATH,
+      `${JSON.stringify({ totalViews: 0, pages: {}, updatedAt: null }, null, 2)}\n`,
+      'utf8'
+    );
+  }
+}
+
+function readViewStats() {
+  ensureViewStatsFile();
+  let raw = fs.readFileSync(VIEW_STATS_PATH, 'utf8');
+  if (raw.charCodeAt(0) === 0xfeff) {
+    raw = raw.slice(1);
+  }
+  try {
+    const parsed = JSON.parse(raw || '{}');
+    const totalViews = Number.isInteger(parsed.totalViews) ? parsed.totalViews : 0;
+    const pages = parsed && typeof parsed.pages === 'object' && parsed.pages ? parsed.pages : {};
+    const updatedAt = typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null;
+    return { totalViews, pages, updatedAt };
+  } catch {
+    const fallback = { totalViews: 0, pages: {}, updatedAt: null };
+    fs.writeFileSync(VIEW_STATS_PATH, `${JSON.stringify(fallback, null, 2)}\n`, 'utf8');
+    return fallback;
+  }
+}
+
+function writeViewStats(stats) {
+  fs.writeFileSync(VIEW_STATS_PATH, `${JSON.stringify(stats, null, 2)}\n`, 'utf8');
+}
+
+function incrementPageView(pagePath) {
+  const safePath = String(pagePath || '/index.html');
+  const stats = readViewStats();
+  stats.totalViews += 1;
+  stats.pages[safePath] = (Number(stats.pages[safePath]) || 0) + 1;
+  stats.updatedAt = new Date().toISOString();
+  writeViewStats(stats);
 }
 
 function readJsonBody(req, maxBytes = 20000) {
@@ -194,7 +238,24 @@ async function sendQuestionEmail({ name, comment }) {
 }
 
 const server = http.createServer((req, res) => {
-  const reqPath = decodeURIComponent((req.url || '/').split('?')[0]);
+  const requestUrl = req.url || '/';
+  const parsedUrl = new URL(requestUrl, `http://${req.headers.host || `localhost:${PORT}`}`);
+  const reqPath = decodeURIComponent(parsedUrl.pathname || '/');
+
+  if (req.method === 'GET' && (reqPath === '/api/admin/views' || reqPath === '/api/admin/views/')) {
+    const inputCode = String(parsedUrl.searchParams.get('code') || '').replace(/^#/, '').trim().toUpperCase();
+    if (inputCode !== ADMIN_CODE) {
+      sendJson(res, 403, { error: 'forbidden' });
+      return;
+    }
+    try {
+      const stats = readViewStats();
+      sendJson(res, 200, { ok: true, stats });
+    } catch {
+      sendJson(res, 500, { error: 'view stats read failed' });
+    }
+    return;
+  }
 
   if (req.method === 'GET' && (reqPath === '/api/spots' || reqPath === '/api/spots/')) {
     try {
@@ -343,6 +404,14 @@ const server = http.createServer((req, res) => {
       }
 
       const ext = path.extname(target).toLowerCase();
+      if (req.method === 'GET' && ext === '.html') {
+        const pagePath = relPath.startsWith('/') ? relPath : `/${relPath}`;
+        try {
+          incrementPageView(pagePath);
+        } catch {
+          // Keep serving pages even if stats write fails.
+        }
+      }
       const type = MIME_TYPES[ext] || 'application/octet-stream';
       const headers = {
         'Content-Type': type,
