@@ -150,6 +150,13 @@
       font-size: 0.98rem;
     }
 
+    .all-articles-list .tags {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
     .articles-view-wrap {
       display: none;
     }
@@ -219,8 +226,9 @@
   </nav>
 
   <main class="articles-wrap">    <section class="articles-head">
-      <h1>&#12377;&#12409;&#12390;&#12398;&#35352;&#20107;</h1>
+      <h1 id="articlesTitle">&#12377;&#12409;&#12390;&#12398;&#35352;&#20107;</h1>
       <div class="articles-head-right">
+        <button id="closeButton" type="button" style="display: none;">閉じる</button>
         <label class="articles-sort-wrap" for="sortOrder">
           <span class="articles-sort-icon" aria-hidden="true">&#8645;</span>
           <select class="articles-sort" id="sortOrder" aria-label="&#20006;&#12403;&#38918;">
@@ -265,6 +273,9 @@
     const PAGE_SIZE = 12;
     let allSpots = [];
     let currentPage = 1;
+
+    // 国の名前リスト（国際交流用）
+    const countryNames = ['マレーシア', 'オーストラリア', 'スリランカ', 'インドネシア', 'タイ', 'ベトナム', 'フィリピン', '中国', '韓国', '台湾', 'アメリカ', 'カナダ', 'イギリス', 'ドイツ', 'フランス', 'イタリア', 'スペイン', 'オランダ', 'スウェーデン', 'ノルウェー', 'デンマーク', 'フィンランド', 'ポーランド', 'チェコ', 'ハンガリー', 'ロシア', 'ブラジル', 'アルゼンチン', 'チリ', 'メキシコ', 'ペルー', 'コロンビア', 'エクアドル', 'ボリビア', 'パラグアイ', 'ウルグアイ', '南アフリカ', 'ナイジェリア', 'ケニア', 'エジプト', 'モロッコ', 'チュニジア', 'アルジェリア', 'リビア', 'ガーナ', 'セネガル', 'コートジボワール', 'カメルーン', 'タンザニア', 'ウガンダ', 'ルワンダ', 'ブルンジ', 'ジンバブエ', 'ザンビア', 'マラウイ', 'モザンビーク', 'マダガスカル', 'モーリシャス', 'セーシェル', 'コモロ', 'ジブチ', 'ソマリア', 'エチオピア', 'スーダン', '南スーダン', 'チャド', '中央アフリカ', 'コンゴ', 'ガボン', '赤道ギニア', 'サントメ・プリンシペ', 'アンゴラ', 'ナミビア', 'ボツワナ', 'レソト', 'スワジランド', '日本', '北海道', '下関'];
 
     menuToggle.addEventListener('click', () => {
       const isOpen = siteMenu.classList.toggle('is-open');
@@ -355,6 +366,38 @@
       if (!filterTag) {
         return allSpots;
       }
+      if (filterTag === '国際交流') {
+        // 国際交流の場合、国の名前を含むタグの記事を表示
+        return allSpots.filter((spot) => {
+          const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
+          return tags.some((tag) => {
+            const tagStr = String(tag || '').trim().toLowerCase();
+            return countryNames.some((country) => tagStr.includes(country.toLowerCase()));
+          });
+        });
+      }
+      if (filterTag === '就職・進路') {
+        // 就職・進路の場合、実習/インターンシップ/サービスラーニングのタグの記事を表示
+        const jobTags = ['実習', 'インターンシップ', 'サービスラーニング'];
+        return allSpots.filter((spot) => {
+          const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
+          return tags.some((tag) => {
+            const tagStr = String(tag || '').trim().toLowerCase();
+            return jobTags.some((jobTag) => tagStr.includes(jobTag.toLowerCase()));
+          });
+        });
+      }
+      if (filterTag === '学生生活') {
+        // 学生生活の場合、振り返り/大学内施設/学生生活のタグの記事を表示
+        const lifeTags = ['振り返り', '大学内施設', '学生生活'];
+        return allSpots.filter((spot) => {
+          const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
+          return tags.some((tag) => {
+            const tagStr = String(tag || '').trim().toLowerCase();
+            return lifeTags.some((lifeTag) => tagStr.includes(lifeTag.toLowerCase()));
+          });
+        });
+      }
       return allSpots.filter((spot) => {
         const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
         return tags.some((tag) => String(tag || '').trim().toLowerCase().replace(/^#/, '').includes(filterTag));
@@ -387,7 +430,9 @@
             spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || '/uploads/1772641750165-1.svg'
           ).trim();
           const href = viewerPath || '#';
-          return `<li><a class="article-card-link" href="${escapeHtml(href)}"><span class="article-card-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="article-card-meta"><p class="issue">${issue}</p><p class="title">${title}</p></span></a></li>`;
+          const tags = Array.isArray(spot.tags) ? spot.tags.map(tag => escapeHtml(String(tag || '').trim())).filter(tag => tag).join('、') : '';
+          const tagsHtml = tags ? `<p class="tags">${tags}</p>` : '';
+          return `<li><a class="article-card-link" href="${escapeHtml(href)}"><span class="article-card-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="article-card-meta"><p class="issue">${issue}</p><p class="title">${title}</p>${tagsHtml}</span></a></li>`;
         }).join('');
       }
 
@@ -453,7 +498,21 @@
       }
     }
 
-    loadAllSpots();
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllSpots();
+
+      // タイトルと閉じるボタンの設定
+      const articlesTitle = document.getElementById('articlesTitle');
+      const closeButton = document.getElementById('closeButton');
+      if (filterTag) {
+        // タグが指定されている場合、タイトルを変更し、閉じるボタンを表示
+        articlesTitle.textContent = '学部・学科案内';
+        closeButton.style.display = 'inline-block';
+        closeButton.addEventListener('click', () => {
+          window.location.href = './index.html';
+        });
+      }
+    });
   </script>
 </body>
 </html>
