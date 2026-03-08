@@ -3,8 +3,8 @@
   --surface: #ffffff;
   --text: #1f2d3d;
   --muted: #5f6f81;
-  --accent: #0f6fff;
-  --line: #d9e2f0;
+  --accent: #ff0f8f;
+  --line: #f0d9e7;
 }
 
 * {
@@ -25,6 +25,7 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: hidden;
 }
 
 body.is-modal-open {
@@ -58,11 +59,9 @@ h1, h2 {
   line-height: 1.3;
 }
 
-.site-title {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-  gap: 2px;
+.site-title a {
+  text-decoration: none;
+  color: inherit;
 }
 
 .site-title-sub {
@@ -70,6 +69,7 @@ h1, h2 {
   font-weight: 500;
   color: var(--muted);
   letter-spacing: 0.06em;
+  display: block;
 }
 
 .search-form {
@@ -138,11 +138,11 @@ h1, h2 {
 }
 
 .reload-button:hover {
-  background: #f3f7ff;
+  background: #fff3f8;
 }
 
 .add-spot-button:hover {
-  background: #f3f7ff;
+  background: #fff3f8;
 }
 
 .menu-toggle span {
@@ -162,7 +162,7 @@ h1, h2 {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 16px;
-  box-shadow: 0 14px 30px rgba(17, 39, 89, 0.16);
+  box-shadow: 0 14px 30px rgba(89, 17, 57, 0.16);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-8px);
@@ -263,7 +263,7 @@ a:hover {
   display: block;
   overflow: hidden;
   border-radius: 14px;
-  box-shadow: 0 8px 22px rgba(17, 39, 89, 0.14);
+  box-shadow: 0 8px 22px rgba(89, 17, 57, 0.14);
 }
 
 .latest-cover-link img {
@@ -311,6 +311,10 @@ a:hover {
   text-decoration: none;
 }
 
+.todays-recommendation-area {
+  margin-top: clamp(52px, 7vw, 88px);
+}
+
 .back-number-area {
   margin-top: clamp(52px, 7vw, 88px);
 }
@@ -346,7 +350,7 @@ a:hover {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 5px 16px rgba(17, 39, 89, 0.1);
+  box-shadow: 0 5px 16px rgba(89, 17, 57, 0.1);
   overflow: hidden;
 }
 
@@ -394,6 +398,85 @@ a:hover {
 }
 
 .back-number-more-btn:hover {
+  text-decoration: none;
+}
+
+.todays-recommendation-head {
+  text-align: center;
+}
+
+.todays-recommendation-kicker {
+  margin: 0;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  font-weight: 700;
+}
+
+.todays-recommendation-ja {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.todays-recommendation-feature {
+  margin-top: clamp(20px, 3vw, 30px);
+  display: grid;
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 34px);
+  align-items: center;
+}
+
+.todays-recommendation-cover-link {
+  display: block;
+  overflow: hidden;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(89, 17, 57, 0.14);
+}
+
+.todays-recommendation-cover-link img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.todays-recommendation-cover-link:hover img {
+  transform: scale(1.04);
+}
+
+.todays-recommendation-meta {
+  text-align: left;
+}
+
+.todays-recommendation-date {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.todays-recommendation-title {
+  margin: 8px 0 16px;
+  color: var(--text);
+  font-size: clamp(1.15rem, 1.8vw, 1.45rem);
+}
+
+.todays-recommendation-read-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.todays-recommendation-read-btn:hover {
   text-decoration: none;
 }
 
@@ -482,7 +565,7 @@ a:hover {
 }
 
 .about-magazine-card {
-  background: linear-gradient(135deg, #e8f2ff 0%, #dcecff 45%, #f4f9ff 100%);
+  background: linear-gradient(135deg, #ffe8f2 0%, #ffdcec 45%, #fff4f9 100%);
   border: 0;
   border-radius: 0 12px 12px 12px;
   padding: clamp(44px, 7vw, 86px) clamp(20px, 6vw, 76px);
@@ -496,7 +579,7 @@ a:hover {
 
 .about-magazine-en {
   margin: 0;
-  color: #0b3d91;
+  color: #910b4d;
   font-size: clamp(1.2rem, 2.2vw, 1.9rem);
   font-weight: 700;
   letter-spacing: 0.22em;
@@ -504,7 +587,7 @@ a:hover {
 
 .about-magazine-ja {
   margin: 12px 0 0;
-  color: #123a73;
+  color: #731247;
   font-size: clamp(1rem, 1.7vw, 1.3rem);
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -514,7 +597,7 @@ a:hover {
   width: 100%;
   height: 1px;
   margin: 26px 0 30px;
-  background: linear-gradient(90deg, rgba(90, 140, 210, 0), #8bb4ea 14%, #8bb4ea 86%, rgba(90, 140, 210, 0));
+  background: linear-gradient(90deg, rgba(210, 90, 150, 0), #ea8bc0 14%, #ea8bc0 86%, rgba(210, 90, 150, 0));
 }
 
 .about-magazine-layout {
@@ -526,7 +609,7 @@ a:hover {
 
 .about-magazine-body {
   margin-top: 10px;
-  color: #1d3557;
+  color: #571d3f;
   text-align: left;
 }
 
@@ -670,8 +753,8 @@ a:hover {
   margin-right: 8px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #eef4ff;
-  color: #36527d;
+  background: #ffeef7;
+  color: #7d365e;
   font-size: 0.82rem;
   font-weight: 600;
 }
@@ -724,7 +807,7 @@ a:hover {
 }
 
 .spot-tag-ai {
-  background: #4a6ea8;
+  background: #a84a84;
 }
 
 .spot-form button:disabled {
@@ -752,7 +835,7 @@ a:hover {
 .spot-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(8, 20, 41, 0.42);
+  background: rgba(41, 8, 27, 0.42);
 }
 
 .spot-modal-panel {
@@ -763,7 +846,7 @@ a:hover {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 16px;
-  box-shadow: 0 16px 42px rgba(15, 30, 62, 0.26);
+  box-shadow: 0 16px 42px rgba(62, 15, 42, 0.26);
 }
 
 .spot-modal-head {
@@ -797,3 +880,4 @@ a:hover {
   border: 0;
   background: #fff;
 }
+

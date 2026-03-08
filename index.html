@@ -12,9 +12,10 @@
 <body>
   <header class="top-header">
     <div class="header-row">
-      <h1 class="site-title">BAIKO TIMES<span class="site-title-sub">学生制作広報誌</span></h1>
+      <h1 class="site-title"><a href="./index.html">BAIKO TIMES</a><span class="site-title-sub">学生制作広報誌</span></h1>
       <div class="header-actions">
         <button class="reload-button" id="reloadButton" type="button" aria-label="ページを更新">再読み込み</button>
+        <button class="restart-button" id="restartButton" type="button" aria-label="アプリを再起動">再起動</button>
         <button class="add-spot-button" id="addSpotButton" type="button" aria-label="記事を追加">＋</button>
         <button class="menu-toggle" id="menuToggle" aria-label="メニューを開く" aria-expanded="false" aria-controls="siteMenu">
           <span></span>
@@ -68,6 +69,24 @@
             <a id="latestIssueReadButton" class="latest-read-btn" href="#">読む</a>
           </div>
         </article>
+
+        <div class="todays-recommendation-area">
+          <div class="todays-recommendation-head">
+            <p class="todays-recommendation-kicker">TODAY'S RECOMMENDATION</p>
+            <h2 class="todays-recommendation-ja">本日のおすすめ記事</h2>
+          </div>
+
+          <article class="todays-recommendation-feature">
+            <a id="todaysRecommendationLink" class="todays-recommendation-cover-link" href="#">
+              <img id="todaysRecommendationCover" src="./uploads/1772641750165-1.svg" alt="本日のおすすめ記事表紙">
+            </a>
+            <div class="todays-recommendation-meta">
+              <p id="todaysRecommendationDate" class="todays-recommendation-date">--</p>
+              <h3 id="todaysRecommendationTitle" class="todays-recommendation-title">おすすめ記事を読み込み中...</h3>
+              <a id="todaysRecommendationReadButton" class="todays-recommendation-read-btn" href="#">読む</a>
+            </div>
+          </article>
+        </div>
 
         <div class="back-number-area">
           <div class="back-number-head">
@@ -405,6 +424,50 @@
       renderBackNumbers(filtered);
     }
 
+    function renderTodaysRecommendation(spots) {
+      const todaysRecommendationLink = document.getElementById('todaysRecommendationLink');
+      const todaysRecommendationCover = document.getElementById('todaysRecommendationCover');
+      const todaysRecommendationDate = document.getElementById('todaysRecommendationDate');
+      const todaysRecommendationTitle = document.getElementById('todaysRecommendationTitle');
+      const todaysRecommendationReadButton = document.getElementById('todaysRecommendationReadButton');
+
+      if (!Array.isArray(spots) || spots.length === 0) {
+        todaysRecommendationTitle.textContent = 'おすすめ記事がありません。';
+        todaysRecommendationLink.setAttribute('href', '#');
+        todaysRecommendationReadButton.setAttribute('href', '#');
+        return;
+      }
+
+      // ランダムに1つ選ぶ
+      const randomIndex = Math.floor(Math.random() * spots.length);
+      const spot = spots[randomIndex];
+
+      const filePath = String(spot.filePath || '').trim();
+      const legacyUrl = String(spot.url || '').trim();
+      const linkPath = filePath || legacyUrl;
+      const viewerPath = linkPath
+        ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
+        : '#';
+
+      todaysRecommendationLink.setAttribute('href', viewerPath);
+      todaysRecommendationReadButton.setAttribute('href', viewerPath);
+
+      const issueYear = Number(spot.issueYear);
+      const issueMonth = Number(spot.issueMonth);
+      const issueText = Number.isInteger(issueYear) && Number.isInteger(issueMonth)
+        ? `${issueYear}年${issueMonth}月号`
+        : '掲載号未設定';
+
+      todaysRecommendationDate.textContent = issueText;
+      todaysRecommendationTitle.textContent = String(spot.title || 'タイトルなし');
+
+      const imagePath = String(
+        spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || '/uploads/1772641750165-1.svg'
+      ).trim();
+      todaysRecommendationCover.setAttribute('src', imagePath);
+      todaysRecommendationCover.setAttribute('alt', String(spot.title || 'おすすめ記事'));
+    }
+
     async function fetchSpots() {
       const response = await fetch('/api/spots');
       const raw = await response.text();
@@ -426,6 +489,7 @@
         const spots = await fetchSpots();
         allSpots = spots;
         updateLatestIssueSection(spots);
+        renderTodaysRecommendation(spots);
         applySearch();
       } catch (error) {
         latestIssueDate.textContent = '--';
