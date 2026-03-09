@@ -5,10 +5,13 @@
   "scripts": {
     "dev": "node dev-server.js",
     "start": "node dev-server.js",
-    "electron:dev": "node electron-dev.js",
+    "electron:dev": "electron electron-dev.js",
     "electron:mobile": "node electron-mobile-dev.js"
   },
   "dependencies": {
     "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "electron": "^40.8.0"
   }
 }

@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 5173;
+const PORT = process.env.PORT || 5174;
 const ROOT = process.cwd();
 const MAIL_TO = 'manapaioniajapan@gmail.com';
 const SPOTS_PATH = path.join(ROOT, 'spots.json');

@@ -359,7 +359,7 @@
         ? `${issueYear}年${issueMonth}月号`
         : '最新号';
       latestIssueDate.textContent = issueText;
-      latestIssueTitle.textContent = String(latest.title || 'BAIKO TIMES 最新号');
+      latestIssueTitle.textContent = issueText;
 
       const imagePath = String(
         latest.coverImagePath || latest.coverPath || latest.thumbnailPath || latest.imagePath || './uploads/1772641750165-1.svg'
@@ -470,7 +470,7 @@
         : '掲載号未設定';
 
       todaysRecommendationDate.textContent = issueText;
-      todaysRecommendationTitle.textContent = String(spot.title || 'タイトルなし');
+      todaysRecommendationTitle.textContent = issueText;
 
       const imagePath = String(
         spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || '/uploads/1772641750165-1.svg'

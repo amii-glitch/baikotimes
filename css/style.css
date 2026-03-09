@@ -218,6 +218,27 @@ a:hover {
   display: none;
 }
 
+/* セクション間の区切り線 */
+.latest-issue-showcase {
+  border-top: 1px solid var(--line);
+}
+
+.todays-recommendation-area {
+  border-top: 1px solid var(--line);
+}
+
+.back-number-area {
+  border-top: 1px solid var(--line);
+}
+
+#aboutMagazineSection {
+  border-top: 1px solid var(--line);
+}
+
+#questionSection {
+  border-top: 1px solid var(--line);
+}
+
 .issue-card {
   margin-top: 0;
   background: var(--surface);
@@ -262,7 +283,7 @@ a:hover {
 .latest-cover-link {
   display: block;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 0;
   box-shadow: 0 8px 22px rgba(89, 17, 57, 0.14);
 }
 
@@ -270,6 +291,8 @@ a:hover {
   display: block;
   width: 100%;
   height: auto;
+  object-fit: contain;
+  background: #f5f5f5;
   transition: transform 0.3s ease;
 }
 
@@ -349,7 +372,7 @@ a:hover {
   display: block;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 5px 16px rgba(89, 17, 57, 0.1);
   overflow: hidden;
 }
@@ -430,7 +453,7 @@ a:hover {
 .todays-recommendation-cover-link {
   display: block;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 0;
   box-shadow: 0 8px 22px rgba(89, 17, 57, 0.14);
 }
 
@@ -438,6 +461,8 @@ a:hover {
   display: block;
   width: 100%;
   height: auto;
+  object-fit: contain;
+  background: #f5f5f5;
   transition: transform 0.3s ease;
 }
 

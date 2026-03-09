@@ -102,7 +102,7 @@
 
     .all-articles-list li {
       background: #fff;
-      border-radius: 12px;
+      border-radius: 0;
       border: 1px solid var(--line);
       overflow: hidden;
       box-shadow: 0 5px 16px rgba(17, 39, 89, 0.1);
@@ -430,7 +430,7 @@
             spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || '/uploads/1772641750165-1.svg'
           ).trim();
           const href = viewerPath || '#';
-          return `<li><a class="article-card-link" href="${escapeHtml(href)}"><span class="article-card-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="article-card-meta"><p class="issue">${issue}</p><p class="title">${title}</p></span></a></li>`;
+          return `<li><a class="article-card-link" href="${escapeHtml(href)}"><span class="article-card-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="article-card-meta"><p class="issue">${issue}</p></span></a></li>`;
         }).join('');
       }
 

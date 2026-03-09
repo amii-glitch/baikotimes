@@ -1,9 +1,79 @@
+const { app, BrowserWindow, ipcMain } = require('electron');
 const http = require('http');
 const net = require('net');
 const { spawn } = require('child_process');
 
 const BASE_PORT = Number(process.env.PORT || 5173);
 
+function createWindow(url) {
+  const win = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: __dirname + '/preload.js' // preloadスクリプトが必要
+    }
+  });
+
+  win.loadURL(url);
+
+  // 開発ツールを開く（開発時のみ）
+  // win.webContents.openDevTools();
+}
+
+ipcMain.handle('restart-app', () => {
+  app.relaunch();
+  app.exit();
+});
+
+app.whenReady().then(async () => {
+  // 既存のサーバー起動コード
+  const baseRunning = await isPortOpen(BASE_PORT);
+  if (baseRunning) {
+    const ready = await endpointExists(BASE_PORT, '/api/spots');
+    if (ready) {
+      const url = `http://localhost:${BASE_PORT}`;
+      console.log(`Dev server already running: ${url}`);
+      createWindow(url);
+      return;
+    }
+  }
+
+  const launchPort = baseRunning ? await findAvailablePort(BASE_PORT + 1) : BASE_PORT;
+  const url = `http://localhost:${launchPort}`;
+  const server = spawn(process.execPath, ['dev-server.js'], {
+    stdio: 'inherit',
+    env: { ...process.env, PORT: String(launchPort) }
+  });
+
+  setTimeout(() => createWindow(url), 1200);
+
+  const shutdown = (code = 0) => {
+    if (!server.killed) {
+      server.kill();
+    }
+    app.quit();
+  };
+
+  process.on('SIGINT', () => shutdown(0));
+  process.on('SIGTERM', () => shutdown(0));
+  server.on('exit', (code) => app.quit());
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    // 再作成が必要なら
+  }
+});
+
+// 既存の関数はそのまま
 function isPortOpen(port, host = '127.0.0.1', timeoutMs = 400) {
   return new Promise((resolve) => {
     const socket = new net.Socket();
