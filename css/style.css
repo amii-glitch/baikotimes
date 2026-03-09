@@ -362,9 +362,9 @@ a:hover {
 .back-number-thumb img {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.3s ease;
+  background: #f5f5f5;
 }
 
 .back-number-card a:hover .back-number-thumb img {
@@ -598,6 +598,31 @@ a:hover {
   height: 1px;
   margin: 26px 0 30px;
   background: linear-gradient(90deg, rgba(210, 90, 150, 0), #ea8bc0 14%, #ea8bc0 86%, rgba(210, 90, 150, 0));
+}
+
+#scrollToTop {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 50px;
+  height: 50px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#scrollToTop:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 .about-magazine-layout {

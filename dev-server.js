@@ -279,6 +279,9 @@ const server = http.createServer((req, res) => {
           const fileName = String(body.fileName || '').trim();
           const fileData = String(body.fileData || '').trim();
           const normalizedFileData = fileData.replace(/\s/g, '');
+          const coverFileName = String(body.coverFileName || '').trim();
+          const coverData = String(body.coverData || '').trim();
+          const normalizedCoverData = coverData.replace(/\s/g, '');
 
           if (!Number.isInteger(issueYear) || issueYear < 1900 || issueYear > 2100) {
             sendJson(res, 400, { error: '年は1900〜2100の範囲で入力してください。' });
@@ -319,6 +322,17 @@ const server = http.createServer((req, res) => {
 
           const filePath = saveUploadedFile(fileName, normalizedFileData);
 
+          let coverPath = null;
+          if (coverFileName && normalizedCoverData) {
+            const coverPadding = normalizedCoverData.endsWith('==') ? 2 : normalizedCoverData.endsWith('=') ? 1 : 0;
+            const coverSizeBytes = Math.floor((normalizedCoverData.length * 3) / 4) - coverPadding;
+            if (coverSizeBytes > 5 * 1024 * 1024) {
+              sendJson(res, 400, { error: '表紙画像のサイズが大きすぎます。5MB以下にしてください。' });
+              return;
+            }
+            coverPath = saveUploadedFile(coverFileName, normalizedCoverData);
+          }
+
           const spots = readSpots();
           const entry = {
             id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -329,6 +343,7 @@ const server = http.createServer((req, res) => {
             filePath,
             summary,
             tags,
+            coverPath,
             createdAt: new Date().toISOString()
           };
           spots.unshift(entry);
