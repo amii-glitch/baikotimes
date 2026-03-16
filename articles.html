@@ -277,10 +277,38 @@
     // 国の名前リスト（国際交流用）
     const countryNames = ['マレーシア', 'オーストラリア', 'スリランカ', 'インドネシア', 'タイ', 'ベトナム', 'フィリピン', '中国', '韓国', '台湾', 'アメリカ', 'カナダ', 'イギリス', 'ドイツ', 'フランス', 'イタリア', 'スペイン', 'オランダ', 'スウェーデン', 'ノルウェー', 'デンマーク', 'フィンランド', 'ポーランド', 'チェコ', 'ハンガリー', 'ロシア', 'ブラジル', 'アルゼンチン', 'チリ', 'メキシコ', 'ペルー', 'コロンビア', 'エクアドル', 'ボリビア', 'パラグアイ', 'ウルグアイ', '南アフリカ', 'ナイジェリア', 'ケニア', 'エジプト', 'モロッコ', 'チュニジア', 'アルジェリア', 'リビア', 'ガーナ', 'セネガル', 'コートジボワール', 'カメルーン', 'タンザニア', 'ウガンダ', 'ルワンダ', 'ブルンジ', 'ジンバブエ', 'ザンビア', 'マラウイ', 'モザンビーク', 'マダガスカル', 'モーリシャス', 'セーシェル', 'コモロ', 'ジブチ', 'ソマリア', 'エチオピア', 'スーダン', '南スーダン', 'チャド', '中央アフリカ', 'コンゴ', 'ガボン', '赤道ギニア', 'サントメ・プリンシペ', 'アンゴラ', 'ナミビア', 'ボツワナ', 'レソト', 'スワジランド', '日本', '北海道', '下関'];
 
-    menuToggle.addEventListener('click', () => {
+
+    function closeMenu() {
+      const isOpen = siteMenu.classList.contains('is-open');
+      if (!isOpen) {
+        return;
+      }
+      siteMenu.classList.remove('is-open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      siteMenu.setAttribute('aria-hidden', 'true');
+    }
+
+    menuToggle.addEventListener('click', (event) => {
+      event.stopPropagation();
       const isOpen = siteMenu.classList.toggle('is-open');
       menuToggle.setAttribute('aria-expanded', String(isOpen));
       siteMenu.setAttribute('aria-hidden', String(!isOpen));
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!siteMenu.classList.contains('is-open')) {
+        return;
+      }
+      const target = event.target;
+      if (!siteMenu.contains(target) && !menuToggle.contains(target)) {
+        closeMenu();
+      }
+    });
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeMenu();
+      }
     });
 
 

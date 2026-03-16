@@ -209,10 +209,38 @@
     let allSpots = [];
     const ADMIN_HASH = '#MPJ3';
 
-    menuToggle.addEventListener('click', () => {
+
+    function closeMenu() {
+      const isOpen = siteMenu.classList.contains('is-open');
+      if (!isOpen) {
+        return;
+      }
+      siteMenu.classList.remove('is-open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      siteMenu.setAttribute('aria-hidden', 'true');
+    }
+
+    menuToggle.addEventListener('click', (event) => {
+      event.stopPropagation();
       const isOpen = siteMenu.classList.toggle('is-open');
       menuToggle.setAttribute('aria-expanded', String(isOpen));
       siteMenu.setAttribute('aria-hidden', String(!isOpen));
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!siteMenu.classList.contains('is-open')) {
+        return;
+      }
+      const target = event.target;
+      if (!siteMenu.contains(target) && !menuToggle.contains(target)) {
+        closeMenu();
+      }
+    });
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeMenu();
+      }
     });
 
     reloadButton.addEventListener('click', () => {
