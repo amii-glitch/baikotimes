@@ -1,6 +1,5 @@
 (function () {
-  const ADMIN_HASH = '#MPJ3';
-  const ADMIN_CODE = 'MPJ3';
+  const ADMIN_HASH = '#ADMIN';
   let panel;
 
   function ensurePanel() {
@@ -118,8 +117,9 @@
     listNode.innerHTML = '';
 
     try {
-      const response = await fetch(`/api/admin/views?code=${encodeURIComponent(ADMIN_CODE)}`, {
-        cache: 'no-store'
+      const response = await fetch('/api/admin/views', {
+        cache: 'no-store',
+        credentials: 'same-origin'
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data || !data.stats) {

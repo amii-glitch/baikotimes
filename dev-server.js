@@ -9,12 +9,16 @@ const MAIL_TO = 'manapaioniajapan@gmail.com';
 const SPOTS_PATH = path.join(ROOT, 'spots.json');
 const UPLOADS_DIR = path.join(ROOT, 'uploads');
 const VIEW_STATS_PATH = path.join(ROOT, 'view-stats.json');
-const ADMIN_CODE = 'MPJ3';
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'editor';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'MPJ3';
+const IS_PRODUCTION = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
+const ADMIN_CODE = String(process.env.ADMIN_CODE || '').trim();
+const ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || (IS_PRODUCTION ? '' : 'editor')).trim();
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || (IS_PRODUCTION ? '' : 'MPJ3')).trim();
 const ADMIN_SESSION_COOKIE = 'baiko_admin_session';
 const ADMIN_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const adminSessions = new Map();
+const loginAttempts = new Map();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 8;
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -36,6 +40,9 @@ function sendJson(res, statusCode, payload, extraHeaders = {}) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
     ...extraHeaders
   });
   res.end(JSON.stringify(payload));
@@ -44,7 +51,10 @@ function sendJson(res, statusCode, payload, extraHeaders = {}) {
 function sendRedirect(res, location) {
   res.writeHead(302, {
     Location: location,
-    'Cache-Control': 'no-store'
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
   });
   res.end();
 }
@@ -52,9 +62,28 @@ function sendRedirect(res, location) {
 function send404(res) {
   res.writeHead(404, {
     'Content-Type': 'text/plain; charset=utf-8',
-    'Cache-Control': 'no-store'
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
   });
   res.end('404 Not Found');
+}
+
+function validateServerConfiguration() {
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+    throw new Error('サーバー設定エラー: ADMIN_USERNAME と ADMIN_PASSWORD を設定してください。');
+  }
+
+  if (IS_PRODUCTION) {
+    if (!ADMIN_CODE) {
+      throw new Error('サーバー設定エラー: 本番環境では ADMIN_CODE を設定してください。');
+    }
+
+    if (ADMIN_USERNAME === 'editor' || ADMIN_PASSWORD === 'MPJ3' || ADMIN_CODE === 'MPJ3') {
+      throw new Error('サーバー設定エラー: 本番環境では既定の管理認証情報を使用できません。');
+    }
+  }
 }
 
 function ensureViewStatsFile() {
@@ -139,12 +168,49 @@ function isAdminAuthenticated(req) {
   return Boolean(getAdminSession(req));
 }
 
-function buildSessionCookie(token) {
-  return `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(ADMIN_SESSION_MAX_AGE_MS / 1000)}`;
+function isSecureRequest(req) {
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+  return forwardedProto === 'https' || IS_PRODUCTION;
 }
 
-function clearSessionCookie() {
-  return `${ADMIN_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+function buildSessionCookie(req, token) {
+  const secure = isSecureRequest(req) ? '; Secure' : '';
+  return `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(ADMIN_SESSION_MAX_AGE_MS / 1000)}${secure}`;
+}
+
+function clearSessionCookie(req) {
+  const secure = isSecureRequest(req) ? '; Secure' : '';
+  return `${ADMIN_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+}
+
+function getClientIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwarded || req.socket.remoteAddress || 'unknown';
+}
+
+function getLoginAttemptState(ip) {
+  const now = Date.now();
+  const current = loginAttempts.get(ip);
+  if (!current || current.resetAt <= now) {
+    const next = { count: 0, resetAt: now + LOGIN_WINDOW_MS };
+    loginAttempts.set(ip, next);
+    return next;
+  }
+  return current;
+}
+
+function isLoginRateLimited(req) {
+  const state = getLoginAttemptState(getClientIp(req));
+  return state.count >= LOGIN_MAX_ATTEMPTS;
+}
+
+function recordLoginFailure(req) {
+  const state = getLoginAttemptState(getClientIp(req));
+  state.count += 1;
+}
+
+function clearLoginFailures(req) {
+  loginAttempts.delete(getClientIp(req));
 }
 
 function incrementPageView(pagePath) {
@@ -400,21 +466,27 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'POST' && (reqPath === '/api/admin/login' || reqPath === '/api/admin/login/')) {
+    if (isLoginRateLimited(req)) {
+      sendJson(res, 429, { error: 'ログイン試行回数が多すぎます。しばらく待ってから再試行してください。' });
+      return;
+    }
     readJsonBody(req)
       .then((body) => {
         const username = String(body.username || '').trim();
         const password = String(body.password || '').trim();
         if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+          recordLoginFailure(req);
           sendJson(res, 401, { error: 'ユーザー名またはパスワードが違います。' });
           return;
         }
 
+        clearLoginFailures(req);
         const token = createAdminSession();
         sendJson(
           res,
           200,
           { ok: true, user: { username: ADMIN_USERNAME } },
-          { 'Set-Cookie': buildSessionCookie(token) }
+          { 'Set-Cookie': buildSessionCookie(req, token) }
         );
       })
       .catch(() => {
@@ -428,7 +500,7 @@ const server = http.createServer((req, res) => {
     if (current) {
       adminSessions.delete(current.token);
     }
-    sendJson(res, 200, { ok: true }, { 'Set-Cookie': clearSessionCookie() });
+    sendJson(res, 200, { ok: true }, { 'Set-Cookie': clearSessionCookie(req) });
     return;
   }
 
@@ -441,8 +513,8 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'GET' && (reqPath === '/api/admin/views' || reqPath === '/api/admin/views/')) {
-    const inputCode = String(parsedUrl.searchParams.get('code') || '').replace(/^#/, '').trim().toUpperCase();
-    const allowed = isAdminAuthenticated(req) || inputCode === ADMIN_CODE;
+    const inputCode = String(parsedUrl.searchParams.get('code') || '').replace(/^#/, '').trim();
+    const allowed = isAdminAuthenticated(req) || (ADMIN_CODE && inputCode === ADMIN_CODE);
     if (!allowed) {
       sendJson(res, 403, { error: 'forbidden' });
       return;
@@ -676,7 +748,10 @@ const server = http.createServer((req, res) => {
       const commonHeaders = {
         'Content-Type': type,
         'Cache-Control': 'no-store',
-        'Accept-Ranges': 'bytes'
+        'Accept-Ranges': 'bytes',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin'
       };
 
       if (ext === '.pdf') {
@@ -731,6 +806,8 @@ const server = http.createServer((req, res) => {
     });
   });
 });
+
+validateServerConfiguration();
 
 server.listen(PORT, () => {
   console.log(`Dev server running: http://localhost:${PORT}`);
