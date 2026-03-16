@@ -5,12 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>地域イベント特集</title>
   <link rel="stylesheet" href="../css/style.css">
+  <script src="../js/hamburger-menu.js" defer></script>
 </head>
 <body>
 
 <header>
   <h1>地域イベント特集</h1>
+  <button id="hamburgerMenuBtn" class="hamburger-menu-btn" aria-label="メニューを開く" aria-haspopup="true" aria-expanded="false">☰</button>
 </header>
+
+<div id="hamburgerMenuOverlay" class="hamburger-menu-overlay" tabindex="-1" aria-hidden="true">
+  <div class="hamburger-menu-panel">
+    <button id="hamburgerMenuClose" class="hamburger-menu-close" aria-label="閉じる">×</button>
+    <nav class="hamburger-menu-list" aria-label="グローバルメニュー">
+      <a href="../index.html" class="hamburger-menu-card">HOME</a>
+      <a href="../articles.html" class="hamburger-menu-card">バックナンバー</a>
+      <a href="../index.html#searchForm" class="hamburger-menu-card">ABOUT<br>MAGAZIN</a>
+      <a href="https://www.instagram.com/baiko_gakuyu/" class="hamburger-menu-card instagram-link" data-instagram-handle="baiko_gakuyu" target="_blank" rel="noopener">Instagram</a>
+    </nav>
+  </div>
+</div>
 
 <section>
   <img src="../images/event.jpg" alt="イベント写真" width="100%">

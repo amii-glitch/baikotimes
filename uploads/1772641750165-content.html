@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>海外留学での生活</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/hamburger-menu.js" defer></script>
   <style>
     body { margin: 0; background: #f3f6fc; font-family: "Yu Gothic UI", sans-serif; color: #1f2d3d; }
     .wrap { width: min(1080px, 94%); margin: 20px auto; }
@@ -13,6 +15,18 @@
   </style>
 </head>
 <body>
+  <button id="hamburgerMenuBtn" class="hamburger-menu-btn" aria-label="メニューを開く" aria-haspopup="true" aria-expanded="false" style="position:fixed;top:14px;right:14px;z-index:1202;">☰</button>
+  <div id="hamburgerMenuOverlay" class="hamburger-menu-overlay" tabindex="-1" aria-hidden="true">
+    <div class="hamburger-menu-panel">
+      <button id="hamburgerMenuClose" class="hamburger-menu-close" aria-label="閉じる">×</button>
+      <nav class="hamburger-menu-list" aria-label="グローバルメニュー">
+        <a href="../index.html" class="hamburger-menu-card">HOME</a>
+        <a href="../articles.html" class="hamburger-menu-card">バックナンバー</a>
+        <a href="../index.html#searchForm" class="hamburger-menu-card">ABOUT<br>MAGAZIN</a>
+        <a href="https://www.instagram.com/baiko_gakuyu/" class="hamburger-menu-card instagram-link" data-instagram-handle="baiko_gakuyu" target="_blank" rel="noopener">Instagram</a>
+      </nav>
+    </div>
+  </div>
   <main class="wrap">
     <h1>海外留学での生活</h1>
     <section class="page"><img src="./1772641750165-1.svg" alt="海外留学での生活 1ページ目" /></section>

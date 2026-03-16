@@ -7,6 +7,7 @@
   <title>すべての記事 | BAIKO TIMES</title>
   <link rel="stylesheet" href="./css/style.css" />
   <script src="./js/admin-mode.js" defer></script>
+  <script src="./js/hamburger-menu.js" defer></script>
   <style>
     .articles-wrap {
       width: min(1100px, 94%);
@@ -205,25 +206,22 @@
     <div class="header-row">
       <h1 class="site-title">BAIKO TIMES<span class="site-title-sub">学生制作広報誌</span></h1>
       <div class="header-actions">
-        <button class="menu-toggle" id="menuToggle" aria-label="メニューを開く" aria-expanded="false" aria-controls="siteMenu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
+        <button id="hamburgerMenuBtn" class="hamburger-menu-btn" aria-label="メニューを開く" aria-haspopup="true" aria-expanded="false">☰</button>
       </div>
     </div>
   </header>
 
-  <nav class="site-menu" id="siteMenu" aria-hidden="true">
-    <h2>メニュー</h2>
-    <ul>
-      <li><a href="./index.html">トップ画面</a></li>
-      <li><a href="./articles.html">すべての記事</a></li>
-      <li><a id="menuLatestLink" href="#">最新号</a></li>
-      <li><a href="./index.html#aboutMagazineSection">ＡＢＯＵＴ　ＭＡＧＡＺＩＮ</a></li>
-      <li><a href="./index.html#questionSection">お問い合わせ</a></li>
-    </ul>
-  </nav>
+  <div id="hamburgerMenuOverlay" class="hamburger-menu-overlay" tabindex="-1" aria-hidden="true">
+    <div class="hamburger-menu-panel">
+      <button id="hamburgerMenuClose" class="hamburger-menu-close" aria-label="閉じる">×</button>
+      <nav class="hamburger-menu-list" aria-label="グローバルメニュー">
+        <a href="./index.html" class="hamburger-menu-card">HOME</a>
+        <a href="./articles.html" class="hamburger-menu-card">バックナンバー</a>
+        <a href="./index.html#searchForm" class="hamburger-menu-card">ABOUT<br>MAGAZIN</a>
+        <a href="https://www.instagram.com/baiko_gakuyu/" class="hamburger-menu-card instagram-link" data-instagram-handle="baiko_gakuyu" target="_blank" rel="noopener">Instagram</a>
+      </nav>
+    </div>
+  </div>
 
   <main class="articles-wrap">    <section class="articles-head">
       <h1 id="articlesTitle">&#12377;&#12409;&#12390;&#12398;&#35352;&#20107;</h1>
@@ -257,9 +255,6 @@
   </main>
 
   <script>
-    const menuToggle = document.getElementById('menuToggle');
-    const siteMenu = document.getElementById('siteMenu');
-    const menuLatestLink = document.getElementById('menuLatestLink');
     const allArticlesList = document.getElementById('allArticlesList');
     const articlesCount = document.getElementById('articlesCount');
     const prevPage = document.getElementById('prevPage');
@@ -277,39 +272,6 @@
     // 国の名前リスト（国際交流用）
     const countryNames = ['マレーシア', 'オーストラリア', 'スリランカ', 'インドネシア', 'タイ', 'ベトナム', 'フィリピン', '中国', '韓国', '台湾', 'アメリカ', 'カナダ', 'イギリス', 'ドイツ', 'フランス', 'イタリア', 'スペイン', 'オランダ', 'スウェーデン', 'ノルウェー', 'デンマーク', 'フィンランド', 'ポーランド', 'チェコ', 'ハンガリー', 'ロシア', 'ブラジル', 'アルゼンチン', 'チリ', 'メキシコ', 'ペルー', 'コロンビア', 'エクアドル', 'ボリビア', 'パラグアイ', 'ウルグアイ', '南アフリカ', 'ナイジェリア', 'ケニア', 'エジプト', 'モロッコ', 'チュニジア', 'アルジェリア', 'リビア', 'ガーナ', 'セネガル', 'コートジボワール', 'カメルーン', 'タンザニア', 'ウガンダ', 'ルワンダ', 'ブルンジ', 'ジンバブエ', 'ザンビア', 'マラウイ', 'モザンビーク', 'マダガスカル', 'モーリシャス', 'セーシェル', 'コモロ', 'ジブチ', 'ソマリア', 'エチオピア', 'スーダン', '南スーダン', 'チャド', '中央アフリカ', 'コンゴ', 'ガボン', '赤道ギニア', 'サントメ・プリンシペ', 'アンゴラ', 'ナミビア', 'ボツワナ', 'レソト', 'スワジランド', '日本', '北海道', '下関'];
 
-
-    function closeMenu() {
-      const isOpen = siteMenu.classList.contains('is-open');
-      if (!isOpen) {
-        return;
-      }
-      siteMenu.classList.remove('is-open');
-      menuToggle.setAttribute('aria-expanded', 'false');
-      siteMenu.setAttribute('aria-hidden', 'true');
-    }
-
-    menuToggle.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const isOpen = siteMenu.classList.toggle('is-open');
-      menuToggle.setAttribute('aria-expanded', String(isOpen));
-      siteMenu.setAttribute('aria-hidden', String(!isOpen));
-    });
-
-    document.addEventListener('click', (event) => {
-      if (!siteMenu.classList.contains('is-open')) {
-        return;
-      }
-      const target = event.target;
-      if (!siteMenu.contains(target) && !menuToggle.contains(target)) {
-        closeMenu();
-      }
-    });
-
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        closeMenu();
-      }
-    });
 
 
     function pickLatestAddedSpot(spots) {
@@ -330,20 +292,6 @@
       })[0];
     }
 
-    function updateMenuLatestLink(spots) {
-      const latest = pickLatestAddedSpot(spots);
-      if (!latest) {
-        menuLatestLink.setAttribute('href', '#');
-        return;
-      }
-      const filePath = String(latest.filePath || '').trim();
-      const legacyUrl = String(latest.url || '').trim();
-      const linkPath = filePath || legacyUrl;
-      const viewerPath = linkPath
-        ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
-        : '#';
-      menuLatestLink.setAttribute('href', viewerPath);
-    }
     function escapeHtml(value) {
       return String(value || '')
         .replaceAll('&', '&amp;')
@@ -512,11 +460,9 @@
         }
         allSpots = Array.isArray(parsed.spots) ? parsed.spots : [];
         sortSpotsInPlace();
-        updateMenuLatestLink(allSpots);
         currentPage = 1;
         renderPage();
       } catch (error) {
-        menuLatestLink.setAttribute('href', '#');
         articlesCount.textContent = error.message || '記事一覧の読み込みに失敗しました。';
         allArticlesList.innerHTML = '<li>記事一覧の読み込みに失敗しました。</li>';
         prevPage.disabled = true;
