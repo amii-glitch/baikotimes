@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node dev-server.js",
     "start": "node dev-server.js",
-    "electron:dev": "electron electron-dev.js",
+    "electron:dev": "node ./node_modules/electron/cli.js electron-dev.js",
     "electron:mobile": "node electron-mobile-dev.js"
   },
   "dependencies": {
