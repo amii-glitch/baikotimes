@@ -40,6 +40,7 @@
     lowerVideoTag.load();
   }
 
-  // 季節クラスは付与せず、背景色は白で統一
-  document.body.style.background = '#fff';
+  // 背景色は白を維持しつつ、季節クラスで配色のみ切り替える
+  document.body.classList.remove('season-spring', 'season-summer', 'season-autumn', 'season-winter');
+  document.body.classList.add('season-' + setting.season);
 })();

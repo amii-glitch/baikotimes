@@ -5,6 +5,39 @@
   --muted: #5f6f81;
   --accent: #ff0f8f;
   --line: #f0d9e7;
+  --header-font: "Yu Gothic UI", "Hiragino Sans", sans-serif;
+}
+
+body.season-spring {
+  --surface: #ffffff;
+  --text: #4a2a39;
+  --muted: #8f5f76;
+  --accent: #ef6aa8;
+  --line: #f3cfe0;
+}
+
+body.season-summer {
+  --surface: #ffffff;
+  --text: #1d3a4a;
+  --muted: #4a7b8f;
+  --accent: #2aa9d6;
+  --line: #cfe9f3;
+}
+
+body.season-autumn {
+  --surface: #ffffff;
+  --text: #4a321d;
+  --muted: #8f6e4a;
+  --accent: #c97a2b;
+  --line: #ecd8bf;
+}
+
+body.season-winter {
+  --surface: #ffffff;
+  --text: #263848;
+  --muted: #5d7389;
+  --accent: #4d9cc7;
+  --line: #d4e4f0;
 }
 
 * {
@@ -39,6 +72,7 @@ body.is-modal-open {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   padding: 12px 24px 16px;
+  font-family: var(--header-font);
 }
 
 .header-row {
@@ -70,6 +104,14 @@ h1, h2 {
   color: var(--muted);
   letter-spacing: 0.06em;
   display: block;
+}
+
+.site-title,
+.hamburger-menu-btn,
+.hamburger-menu-panel,
+.hamburger-menu-card,
+.hamburger-menu-close {
+  font-family: var(--header-font);
 }
 
 .search-form {

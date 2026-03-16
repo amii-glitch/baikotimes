@@ -38,6 +38,60 @@
       justify-content: flex-end;
     }
 
+    .articles-search-form {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: min(360px, 100%);
+    }
+
+    .articles-search-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .articles-search-form input {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .articles-search-hint {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.35s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: calc(100% - 24px);
+    }
+
+    .articles-search-hint.is-hidden {
+      opacity: 0;
+    }
+
+    .articles-search-form button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     .articles-sort-wrap {
       display: inline-flex;
       align-items: center;
@@ -216,8 +270,8 @@
       <button id="hamburgerMenuClose" class="hamburger-menu-close" aria-label="閉じる">×</button>
       <nav class="hamburger-menu-list" aria-label="グローバルメニュー">
         <a href="./index.html" class="hamburger-menu-card">HOME</a>
-        <a href="./articles.html" class="hamburger-menu-card">バックナンバー</a>
-        <a href="./index.html#searchForm" class="hamburger-menu-card">ABOUT<br>MAGAZIN</a>
+        <a href="./articles.html" class="hamburger-menu-card">BACK NUMBER</a>
+        <a href="./index.html#aboutMagazineSection" class="hamburger-menu-card">ABOUT<br>MAGAZIN</a>
         <a href="https://www.instagram.com/baiko_gakuyu/" class="hamburger-menu-card instagram-link" data-instagram-handle="baiko_gakuyu" target="_blank" rel="noopener">Instagram</a>
       </nav>
     </div>
@@ -226,6 +280,13 @@
   <main class="articles-wrap">    <section class="articles-head">
       <h1 id="articlesTitle">&#12377;&#12409;&#12390;&#12398;&#35352;&#20107;</h1>
       <div class="articles-head-right">
+        <form class="articles-search-form" id="articlesSearchForm" role="search" aria-label="すべての記事内を検索">
+          <div class="articles-search-input-wrap">
+            <input id="articlesSearchInput" type="search" aria-label="記事検索" />
+            <span class="articles-search-hint" id="articlesSearchHint" aria-hidden="true"></span>
+          </div>
+          <button type="submit">検索</button>
+        </form>
         <button id="closeButton" type="button" style="display: none;">閉じる</button>
         <label class="articles-sort-wrap" for="sortOrder">
           <span class="articles-sort-icon" aria-hidden="true">&#8645;</span>
@@ -260,14 +321,80 @@
     const prevPage = document.getElementById('prevPage');
     const nextPage = document.getElementById('nextPage');
     const pageInfo = document.getElementById('pageInfo');
+    const articlesSearchForm = document.getElementById('articlesSearchForm');
+    const articlesSearchInput = document.getElementById('articlesSearchInput');
+    const articlesSearchHint = document.getElementById('articlesSearchHint');
     const sortOrder = document.getElementById('sortOrder');
     const viewMode = document.getElementById('viewMode');
     const queryParams = new URLSearchParams(window.location.search);
     const filterTag = String(queryParams.get('tag') || '').trim().toLowerCase().replace(/^#/, '');
+    const filterQuery = String(queryParams.get('q') || '').trim().toLowerCase();
 
     const PAGE_SIZE = 12;
     let allSpots = [];
     let currentPage = 1;
+    const fallbackSearchExamples = ['学生生活', '国際交流', 'オープンキャンパス', '留学', '大学内施設', '就職・進路'];
+    const SEARCH_PLACEHOLDER_INTERVAL_MS = 3000;
+    let searchPlaceholderTimer = null;
+
+    if (articlesSearchInput && filterQuery) {
+      articlesSearchInput.value = filterQuery;
+    }
+
+    function pickRandomItem(items) {
+      if (!Array.isArray(items) || items.length === 0) {
+        return '';
+      }
+      const index = Math.floor(Math.random() * items.length);
+      return String(items[index] || '').trim();
+    }
+
+    function getSearchExamplePool() {
+      const tagPool = allSpots
+        .flatMap((spot) => Array.isArray(spot && spot.tags) ? spot.tags : [])
+        .map((tag) => String(tag || '').trim())
+        .filter((tag, index, array) => tag && array.indexOf(tag) === index);
+
+      return tagPool.length ? tagPool : fallbackSearchExamples;
+    }
+
+    function updateSearchPlaceholder() {
+      if (!articlesSearchInput || !articlesSearchHint) {
+        return;
+      }
+
+      const example = pickRandomItem(getSearchExamplePool()) || '学生生活';
+      articlesSearchHint.textContent = `タグ例: ${example}`;
+      articlesSearchHint.classList.toggle('is-hidden', Boolean(articlesSearchInput.value));
+    }
+
+    function fadeSearchHint() {
+      if (!articlesSearchHint || !articlesSearchInput || articlesSearchInput.value) {
+        return;
+      }
+
+      articlesSearchHint.classList.add('is-hidden');
+      window.setTimeout(() => {
+        updateSearchPlaceholder();
+        articlesSearchHint.classList.remove('is-hidden');
+      }, 220);
+    }
+
+    function startSearchPlaceholderRotation() {
+      if (!articlesSearchInput) {
+        return;
+      }
+      if (searchPlaceholderTimer) {
+        window.clearInterval(searchPlaceholderTimer);
+      }
+
+      searchPlaceholderTimer = window.setInterval(() => {
+        if (document.activeElement === articlesSearchInput) {
+          return;
+        }
+        fadeSearchHint();
+      }, SEARCH_PLACEHOLDER_INTERVAL_MS);
+    }
 
     // 国の名前リスト（国際交流用）
     const countryNames = ['マレーシア', 'オーストラリア', 'スリランカ', 'インドネシア', 'タイ', 'ベトナム', 'フィリピン', '中国', '韓国', '台湾', 'アメリカ', 'カナダ', 'イギリス', 'ドイツ', 'フランス', 'イタリア', 'スペイン', 'オランダ', 'スウェーデン', 'ノルウェー', 'デンマーク', 'フィンランド', 'ポーランド', 'チェコ', 'ハンガリー', 'ロシア', 'ブラジル', 'アルゼンチン', 'チリ', 'メキシコ', 'ペルー', 'コロンビア', 'エクアドル', 'ボリビア', 'パラグアイ', 'ウルグアイ', '南アフリカ', 'ナイジェリア', 'ケニア', 'エジプト', 'モロッコ', 'チュニジア', 'アルジェリア', 'リビア', 'ガーナ', 'セネガル', 'コートジボワール', 'カメルーン', 'タンザニア', 'ウガンダ', 'ルワンダ', 'ブルンジ', 'ジンバブエ', 'ザンビア', 'マラウイ', 'モザンビーク', 'マダガスカル', 'モーリシャス', 'セーシェル', 'コモロ', 'ジブチ', 'ソマリア', 'エチオピア', 'スーダン', '南スーダン', 'チャド', '中央アフリカ', 'コンゴ', 'ガボン', '赤道ギニア', 'サントメ・プリンシペ', 'アンゴラ', 'ナミビア', 'ボツワナ', 'レソト', 'スワジランド', '日本', '北海道', '下関'];
@@ -339,44 +466,53 @@
     }
 
     function getVisibleSpots() {
-      if (!filterTag) {
-        return allSpots;
-      }
-      if (filterTag === '国際交流') {
-        // 国際交流の場合、国の名前を含むタグの記事を表示
-        return allSpots.filter((spot) => {
-          const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
-          return tags.some((tag) => {
-            const tagStr = String(tag || '').trim().toLowerCase();
-            return countryNames.some((country) => tagStr.includes(country.toLowerCase()));
+      let visible = allSpots;
+      if (filterTag) {
+        if (filterTag === '国際交流') {
+          visible = allSpots.filter((spot) => {
+            const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
+            return tags.some((tag) => {
+              const tagStr = String(tag || '').trim().toLowerCase();
+              return countryNames.some((country) => tagStr.includes(country.toLowerCase()));
+            });
           });
-        });
-      }
-      if (filterTag === '就職・進路') {
-        // 就職・進路の場合、実習/インターンシップ/サービスラーニングのタグの記事を表示
-        const jobTags = ['実習', 'インターンシップ', 'サービスラーニング'];
-        return allSpots.filter((spot) => {
-          const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
-          return tags.some((tag) => {
-            const tagStr = String(tag || '').trim().toLowerCase();
-            return jobTags.some((jobTag) => tagStr.includes(jobTag.toLowerCase()));
+        } else if (filterTag === '就職・進路') {
+          const jobTags = ['実習', 'インターンシップ', 'サービスラーニング'];
+          visible = allSpots.filter((spot) => {
+            const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
+            return tags.some((tag) => {
+              const tagStr = String(tag || '').trim().toLowerCase();
+              return jobTags.some((jobTag) => tagStr.includes(jobTag.toLowerCase()));
+            });
           });
-        });
-      }
-      if (filterTag === '学生生活') {
-        // 学生生活の場合、振り返り/大学内施設/学生生活のタグの記事を表示
-        const lifeTags = ['振り返り', '大学内施設', '学生生活'];
-        return allSpots.filter((spot) => {
-          const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
-          return tags.some((tag) => {
-            const tagStr = String(tag || '').trim().toLowerCase();
-            return lifeTags.some((lifeTag) => tagStr.includes(lifeTag.toLowerCase()));
+        } else if (filterTag === '学生生活') {
+          const lifeTags = ['振り返り', '大学内施設', '学生生活'];
+          visible = allSpots.filter((spot) => {
+            const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
+            return tags.some((tag) => {
+              const tagStr = String(tag || '').trim().toLowerCase();
+              return lifeTags.some((lifeTag) => tagStr.includes(lifeTag.toLowerCase()));
+            });
           });
-        });
+        } else {
+          visible = allSpots.filter((spot) => {
+            const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
+            return tags.some((tag) => String(tag || '').trim().toLowerCase().replace(/^#/, '').includes(filterTag));
+          });
+        }
       }
-      return allSpots.filter((spot) => {
-        const tags = Array.isArray(spot && spot.tags) ? spot.tags : [];
-        return tags.some((tag) => String(tag || '').trim().toLowerCase().replace(/^#/, '').includes(filterTag));
+
+      const query = String(articlesSearchInput && articlesSearchInput.value ? articlesSearchInput.value : '').trim().toLowerCase();
+      if (!query) {
+        return visible;
+      }
+
+      return visible.filter((spot) => {
+        const title = String(spot && spot.title ? spot.title : '').toLowerCase();
+        const summary = String(spot && spot.summary ? spot.summary : '').toLowerCase();
+        const tags = Array.isArray(spot && spot.tags) ? spot.tags.join(' ').toLowerCase() : '';
+        const issue = `${spot && spot.issueYear ? spot.issueYear : ''}年${spot && spot.issueMonth ? spot.issueMonth : ''}月号`.toLowerCase();
+        return title.includes(query) || summary.includes(query) || tags.includes(query) || issue.includes(query);
       });
     }
 
@@ -444,6 +580,30 @@
         renderPage();
       });
     }
+
+    if (articlesSearchForm && articlesSearchInput) {
+      articlesSearchForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        currentPage = 1;
+        renderPage();
+      });
+      articlesSearchInput.addEventListener('input', () => {
+        if (articlesSearchHint) {
+          articlesSearchHint.classList.toggle('is-hidden', Boolean(articlesSearchInput.value));
+        }
+        currentPage = 1;
+        renderPage();
+      });
+      articlesSearchInput.addEventListener('focus', () => {
+        if (articlesSearchHint) {
+          articlesSearchHint.classList.add('is-hidden');
+        }
+      });
+      articlesSearchInput.addEventListener('blur', () => {
+        updateSearchPlaceholder();
+      });
+    }
+
     async function loadAllSpots() {
       try {
         const response = await fetch('/api/spots');
@@ -459,10 +619,12 @@
           throw new Error(parsed.error || fallback);
         }
         allSpots = Array.isArray(parsed.spots) ? parsed.spots : [];
+        updateSearchPlaceholder();
         sortSpotsInPlace();
         currentPage = 1;
         renderPage();
       } catch (error) {
+        updateSearchPlaceholder();
         articlesCount.textContent = error.message || '記事一覧の読み込みに失敗しました。';
         allArticlesList.innerHTML = '<li>記事一覧の読み込みに失敗しました。</li>';
         prevPage.disabled = true;
@@ -471,6 +633,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      updateSearchPlaceholder();
+      startSearchPlaceholderRotation();
       loadAllSpots();
 
       // タイトルと閉じるボタンの設定

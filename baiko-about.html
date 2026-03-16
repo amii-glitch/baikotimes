@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./css/style.css" />
   <script src="./js/admin-mode.js" defer></script>
   <script src="./js/hamburger-menu.js" defer></script>
+  <script src="./js/email-contact.js" defer></script>
   <style>
     :root {
       --ink: #1d2a39;
@@ -39,6 +40,7 @@
     .top {
       border-bottom: 1px solid var(--line);
       background: var(--panel);
+      font-family: "Yu Gothic UI", "Hiragino Sans", sans-serif;
     }
 
     .top-inner {
@@ -55,12 +57,14 @@
       font-weight: 700;
       font-size: clamp(1.6rem, 2vw, 2.2rem);
       letter-spacing: 0.05em;
+      font-family: "Yu Gothic UI", "Hiragino Sans", sans-serif;
     }
 
     .actions {
       display: flex;
       align-items: center;
       gap: 10px;
+      font-family: "Yu Gothic UI", "Hiragino Sans", sans-serif;
     }
 
     .survey {
@@ -248,11 +252,6 @@
   <header class="top">
     <div class="top-inner">
       <div class="brand">梅光学院大学</div>
-      <div class="actions">
-        <a class="survey" href="#">このウェブサイトに関するアンケート</a>
-        <button class="search" type="button" aria-label="検索">🔍</button>
-        <button id="hamburgerMenuBtn" class="hamburger-menu-btn" aria-label="メニューを開く" aria-haspopup="true" aria-expanded="false">☰</button>
-      </div>
     </div>
   </header>
 
@@ -262,7 +261,7 @@
       <nav class="hamburger-menu-list" aria-label="グローバルメニュー">
         <a href="./index.html" class="hamburger-menu-card" target="_top">HOME</a>
         <a href="./articles.html" class="hamburger-menu-card" target="_top">バックナンバー</a>
-        <a href="./index.html#searchForm" class="hamburger-menu-card" target="_top">ABOUT<br>MAGAZIN</a>
+        <a href="./index.html#aboutMagazineSection" class="hamburger-menu-card" target="_top">ABOUT<br>MAGAZIN</a>
         <a href="https://www.instagram.com/baiko_gakuyu/" class="hamburger-menu-card instagram-link" data-instagram-handle="baiko_gakuyu" target="_blank" rel="noopener">Instagram</a>
       </nav>
     </div>
@@ -289,8 +288,12 @@
         <div class="info-item"><a class="info-link" href="./articles.html" target="_top">最新号・バックナンバーを見る</a><span class="info-arrow">›</span></div>
         <div class="info-item">
           <a
-            class="info-link"
-            href="mailto:manapaioniajapan@gmail.com?subject=%E3%80%90%E5%8F%96%E6%9D%90%E3%83%BB%E6%8E%B2%E8%BC%89%E3%81%AB%E9%96%A2%E3%81%99%E3%82%8B%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B%E3%80%91&body=%E5%A4%A7%E5%AD%A6%E5%90%8D%EF%BC%9A%0A%E3%81%94%E6%8B%85%E5%BD%93%E8%80%85%E5%90%8D%EF%BC%9A%0A%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B%E5%86%85%E5%AE%B9%EF%BC%9A"
+            class="info-link email-contact-link"
+            href="mailto:manapaioniajapan@gmail.com"
+            data-email-contact="1"
+            data-mail-to="manapaioniajapan@gmail.com"
+            data-mail-subject="【取材・掲載に関するお問い合わせ】"
+            data-mail-body="大学名：&#10;ご担当者名：&#10;お問い合わせ内容："
             target="_top"
           >取材・掲載に関するお問い合わせ</a>
           <span class="info-arrow">›</span>
@@ -311,7 +314,7 @@
       <div class="foot-links">
         <a href="https://www.baiko.ac.jp/university/" target="_blank" rel="noopener noreferrer">大学案内</a>
         <a href="https://www.baiko.ac.jp/university/outline/access" target="_blank" rel="noopener noreferrer">アクセス</a>
-        <a href="#">お問い合わせ</a>
+        <a class="email-contact-link" href="mailto:manapaioniajapan@gmail.com" data-email-contact="1" data-mail-to="manapaioniajapan@gmail.com">お問い合わせ</a>
       </div>
     </div>
     <div class="foot-bottom">Copyright © Baiko Gakuin University. All Rights Reserved.</div>

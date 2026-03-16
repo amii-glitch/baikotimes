@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const PORT = process.env.PORT || 5174;
 const ROOT = process.cwd();
@@ -9,6 +10,11 @@ const SPOTS_PATH = path.join(ROOT, 'spots.json');
 const UPLOADS_DIR = path.join(ROOT, 'uploads');
 const VIEW_STATS_PATH = path.join(ROOT, 'view-stats.json');
 const ADMIN_CODE = 'MPJ3';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'editor';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'MPJ3';
+const ADMIN_SESSION_COOKIE = 'baiko_admin_session';
+const ADMIN_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+const adminSessions = new Map();
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -25,12 +31,21 @@ const MIME_TYPES = {
   '.txt': 'text/plain; charset=utf-8'
 };
 
-function sendJson(res, statusCode, payload) {
+function sendJson(res, statusCode, payload, extraHeaders = {}) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store'
+    'Cache-Control': 'no-store',
+    ...extraHeaders
   });
   res.end(JSON.stringify(payload));
+}
+
+function sendRedirect(res, location) {
+  res.writeHead(302, {
+    Location: location,
+    'Cache-Control': 'no-store'
+  });
+  res.end();
 }
 
 function send404(res) {
@@ -72,6 +87,63 @@ function readViewStats() {
 
 function writeViewStats(stats) {
   fs.writeFileSync(VIEW_STATS_PATH, `${JSON.stringify(stats, null, 2)}\n`, 'utf8');
+}
+
+function parseCookies(req) {
+  const raw = String(req.headers.cookie || '');
+  const out = {};
+  for (const part of raw.split(';')) {
+    const [name, ...rest] = part.trim().split('=');
+    if (!name) {
+      continue;
+    }
+    out[name] = decodeURIComponent(rest.join('='));
+  }
+  return out;
+}
+
+function createAdminSession() {
+  const token = crypto.randomBytes(24).toString('hex');
+  adminSessions.set(token, {
+    createdAt: Date.now(),
+    expiresAt: Date.now() + ADMIN_SESSION_MAX_AGE_MS
+  });
+  return token;
+}
+
+function purgeExpiredAdminSessions() {
+  const now = Date.now();
+  for (const [token, session] of adminSessions.entries()) {
+    if (!session || session.expiresAt <= now) {
+      adminSessions.delete(token);
+    }
+  }
+}
+
+function getAdminSession(req) {
+  purgeExpiredAdminSessions();
+  const cookies = parseCookies(req);
+  const token = cookies[ADMIN_SESSION_COOKIE];
+  if (!token) {
+    return null;
+  }
+  const session = adminSessions.get(token);
+  if (!session) {
+    return null;
+  }
+  return { token, session };
+}
+
+function isAdminAuthenticated(req) {
+  return Boolean(getAdminSession(req));
+}
+
+function buildSessionCookie(token) {
+  return `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(ADMIN_SESSION_MAX_AGE_MS / 1000)}`;
+}
+
+function clearSessionCookie() {
+  return `${ADMIN_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 }
 
 function incrementPageView(pagePath) {
@@ -204,6 +276,71 @@ function saveUploadedFile(fileName, fileDataBase64) {
   return `/uploads/${uniqueName}`;
 }
 
+function validateSpotInput(body, options = {}) {
+  const requireFile = Boolean(options.requireFile);
+  const issueYear = Number(body.issueYear);
+  const issueMonth = Number(body.issueMonth);
+  const title = String(body.title || '').trim();
+  const summary = String(body.summary || '').trim();
+  const tags = normalizeTags(body.tags);
+  const fileName = String(body.fileName || '').trim();
+  const fileData = String(body.fileData || '').trim().replace(/\s/g, '');
+  const coverFileName = String(body.coverFileName || '').trim();
+  const coverData = String(body.coverData || '').trim().replace(/\s/g, '');
+
+  if (!Number.isInteger(issueYear) || issueYear < 1900 || issueYear > 2100) {
+    throw new Error('年は1900〜2100の範囲で入力してください。');
+  }
+
+  if (!Number.isInteger(issueMonth) || issueMonth < 1 || issueMonth > 12) {
+    throw new Error('月は1〜12の範囲で入力してください。');
+  }
+
+  if (!title) {
+    throw new Error('記事タイトルを入力してください。');
+  }
+
+  if (title.length > 120) {
+    throw new Error('記事タイトルは120文字以内で入力してください。');
+  }
+
+  if (summary.length > 400) {
+    throw new Error('説明は400文字以内で入力してください。');
+  }
+
+  if (requireFile && (!fileName || !fileData)) {
+    throw new Error('掲載するファイルを選択してください。');
+  }
+
+  if (fileData) {
+    const padding = fileData.endsWith('==') ? 2 : fileData.endsWith('=') ? 1 : 0;
+    const fileSizeBytes = Math.floor((fileData.length * 3) / 4) - padding;
+    if (fileSizeBytes > 25 * 1024 * 1024) {
+      throw new Error('ファイルサイズが大きすぎます。25MB以下にしてください。');
+    }
+  }
+
+  if (coverData) {
+    const coverPadding = coverData.endsWith('==') ? 2 : coverData.endsWith('=') ? 1 : 0;
+    const coverSizeBytes = Math.floor((coverData.length * 3) / 4) - coverPadding;
+    if (coverSizeBytes > 5 * 1024 * 1024) {
+      throw new Error('表紙画像のサイズが大きすぎます。5MB以下にしてください。');
+    }
+  }
+
+  return {
+    issueYear,
+    issueMonth,
+    title,
+    summary,
+    tags,
+    fileName,
+    fileData,
+    coverFileName,
+    coverData
+  };
+}
+
 async function sendQuestionEmail({ name, comment }) {
   let nodemailer;
   try {
@@ -242,9 +379,61 @@ const server = http.createServer((req, res) => {
   const parsedUrl = new URL(requestUrl, `http://${req.headers.host || `localhost:${PORT}`}`);
   const reqPath = decodeURIComponent(parsedUrl.pathname || '/');
 
+  if (req.method === 'GET' && (reqPath === '/public' || reqPath === '/public/')) {
+    sendRedirect(res, '/public/index.html');
+    return;
+  }
+
+  if (req.method === 'GET' && (reqPath === '/admin' || reqPath === '/admin/')) {
+    sendRedirect(res, isAdminAuthenticated(req) ? '/admin/dashboard.html' : '/admin/login.html');
+    return;
+  }
+
+  if (req.method === 'POST' && (reqPath === '/api/admin/login' || reqPath === '/api/admin/login/')) {
+    readJsonBody(req)
+      .then((body) => {
+        const username = String(body.username || '').trim();
+        const password = String(body.password || '').trim();
+        if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+          sendJson(res, 401, { error: 'ユーザー名またはパスワードが違います。' });
+          return;
+        }
+
+        const token = createAdminSession();
+        sendJson(
+          res,
+          200,
+          { ok: true, user: { username: ADMIN_USERNAME } },
+          { 'Set-Cookie': buildSessionCookie(token) }
+        );
+      })
+      .catch(() => {
+        sendJson(res, 400, { error: 'リクエスト形式が正しくありません。' });
+      });
+    return;
+  }
+
+  if (req.method === 'POST' && (reqPath === '/api/admin/logout' || reqPath === '/api/admin/logout/')) {
+    const current = getAdminSession(req);
+    if (current) {
+      adminSessions.delete(current.token);
+    }
+    sendJson(res, 200, { ok: true }, { 'Set-Cookie': clearSessionCookie() });
+    return;
+  }
+
+  if (req.method === 'GET' && (reqPath === '/api/admin/session' || reqPath === '/api/admin/session/')) {
+    sendJson(res, 200, {
+      authenticated: isAdminAuthenticated(req),
+      user: isAdminAuthenticated(req) ? { username: ADMIN_USERNAME } : null
+    });
+    return;
+  }
+
   if (req.method === 'GET' && (reqPath === '/api/admin/views' || reqPath === '/api/admin/views/')) {
     const inputCode = String(parsedUrl.searchParams.get('code') || '').replace(/^#/, '').trim().toUpperCase();
-    if (inputCode !== ADMIN_CODE) {
+    const allowed = isAdminAuthenticated(req) || inputCode === ADMIN_CODE;
+    if (!allowed) {
       sendJson(res, 403, { error: 'forbidden' });
       return;
     }
@@ -253,6 +442,19 @@ const server = http.createServer((req, res) => {
       sendJson(res, 200, { ok: true, stats });
     } catch {
       sendJson(res, 500, { error: 'view stats read failed' });
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && (reqPath === '/api/admin/spots' || reqPath === '/api/admin/spots/')) {
+    if (!isAdminAuthenticated(req)) {
+      sendJson(res, 401, { error: 'login required' });
+      return;
+    }
+    try {
+      sendJson(res, 200, { ok: true, spots: readSpots() });
+    } catch {
+      sendJson(res, 500, { error: 'spots.json の読み込みに失敗しました。' });
     }
     return;
   }
@@ -268,81 +470,31 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'POST' && (reqPath === '/api/spots' || reqPath === '/api/spots/')) {
+    if (!isAdminAuthenticated(req)) {
+      sendJson(res, 401, { error: 'ログインが必要です。' });
+      return;
+    }
     readJsonBody(req, 60 * 1024 * 1024)
       .then((body) => {
         try {
-          const issueYear = Number(body.issueYear);
-          const issueMonth = Number(body.issueMonth);
-          const title = String(body.title || '').trim();
-          const summary = String(body.summary || '').trim();
-          const tags = normalizeTags(body.tags);
-          const fileName = String(body.fileName || '').trim();
-          const fileData = String(body.fileData || '').trim();
-          const normalizedFileData = fileData.replace(/\s/g, '');
-          const coverFileName = String(body.coverFileName || '').trim();
-          const coverData = String(body.coverData || '').trim();
-          const normalizedCoverData = coverData.replace(/\s/g, '');
-
-          if (!Number.isInteger(issueYear) || issueYear < 1900 || issueYear > 2100) {
-            sendJson(res, 400, { error: '年は1900〜2100の範囲で入力してください。' });
-            return;
-          }
-
-          if (!Number.isInteger(issueMonth) || issueMonth < 1 || issueMonth > 12) {
-            sendJson(res, 400, { error: '月は1〜12の範囲で入力してください。' });
-            return;
-          }
-
-          if (!title) {
-            sendJson(res, 400, { error: '記事タイトルを入力してください。' });
-            return;
-          }
-
-          if (title.length > 120) {
-            sendJson(res, 400, { error: '記事タイトルは120文字以内で入力してください。' });
-            return;
-          }
-
-          if (summary.length > 400) {
-            sendJson(res, 400, { error: '説明は400文字以内で入力してください。' });
-            return;
-          }
-
-          if (!fileName || !normalizedFileData) {
-            sendJson(res, 400, { error: '掲載するファイルを選択してください。' });
-            return;
-          }
-
-          const padding = normalizedFileData.endsWith('==') ? 2 : normalizedFileData.endsWith('=') ? 1 : 0;
-          const fileSizeBytes = Math.floor((normalizedFileData.length * 3) / 4) - padding;
-          if (fileSizeBytes > 25 * 1024 * 1024) {
-            sendJson(res, 400, { error: 'ファイルサイズが大きすぎます。25MB以下にしてください。' });
-            return;
-          }
-
-          const filePath = saveUploadedFile(fileName, normalizedFileData);
+          const spotInput = validateSpotInput(body, { requireFile: true });
+          const filePath = saveUploadedFile(spotInput.fileName, spotInput.fileData);
 
           let coverPath = null;
-          if (coverFileName && normalizedCoverData) {
-            const coverPadding = normalizedCoverData.endsWith('==') ? 2 : normalizedCoverData.endsWith('=') ? 1 : 0;
-            const coverSizeBytes = Math.floor((normalizedCoverData.length * 3) / 4) - coverPadding;
-            if (coverSizeBytes > 5 * 1024 * 1024) {
-              sendJson(res, 400, { error: '表紙画像のサイズが大きすぎます。5MB以下にしてください。' });
-              return;
-            }
-            coverPath = saveUploadedFile(coverFileName, normalizedCoverData);
+          if (spotInput.coverFileName && spotInput.coverData) {
+            coverPath = saveUploadedFile(spotInput.coverFileName, spotInput.coverData);
           }
 
           const spots = readSpots();
           const entry = {
             id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-            issueYear,
-            issueMonth,
-            title,
-            fileName,
+            issueYear: spotInput.issueYear,
+            issueMonth: spotInput.issueMonth,
+            title: spotInput.title,
+            fileName: spotInput.fileName,
             filePath,
-            summary,
-            tags,
+            summary: spotInput.summary,
+            tags: spotInput.tags,
             coverPath,
             createdAt: new Date().toISOString()
           };
@@ -358,6 +510,62 @@ const server = http.createServer((req, res) => {
           sendJson(res, 413, { error: '送信サイズが大きすぎます。25MB以下のファイルで再試行してください。' });
           return;
         }
+        sendJson(res, 400, { error: 'リクエスト形式が正しくありません。' });
+      });
+    return;
+  }
+
+  if (req.method === 'PUT' && reqPath.startsWith('/api/admin/spots/')) {
+    if (!isAdminAuthenticated(req)) {
+      sendJson(res, 401, { error: 'login required' });
+      return;
+    }
+
+    const spotId = reqPath.split('/').pop();
+    readJsonBody(req, 60 * 1024 * 1024)
+      .then((body) => {
+        try {
+          const spotInput = validateSpotInput(body, { requireFile: false });
+          const spots = readSpots();
+          const index = spots.findIndex((spot) => spot.id === spotId);
+          if (index === -1) {
+            sendJson(res, 404, { error: '記事が見つかりません。' });
+            return;
+          }
+
+          const current = spots[index];
+          let nextFilePath = current.filePath;
+          let nextFileName = current.fileName;
+          if (spotInput.fileName && spotInput.fileData) {
+            nextFilePath = saveUploadedFile(spotInput.fileName, spotInput.fileData);
+            nextFileName = spotInput.fileName;
+          }
+
+          let nextCoverPath = current.coverPath || null;
+          if (spotInput.coverFileName && spotInput.coverData) {
+            nextCoverPath = saveUploadedFile(spotInput.coverFileName, spotInput.coverData);
+          }
+
+          spots[index] = {
+            ...current,
+            issueYear: spotInput.issueYear,
+            issueMonth: spotInput.issueMonth,
+            title: spotInput.title,
+            summary: spotInput.summary,
+            tags: spotInput.tags,
+            fileName: nextFileName,
+            filePath: nextFilePath,
+            coverPath: nextCoverPath,
+            updatedAt: new Date().toISOString()
+          };
+
+          writeSpots(spots);
+          sendJson(res, 200, { ok: true, spot: spots[index] });
+        } catch (err) {
+          sendJson(res, 400, { error: err && err.message ? err.message : '記事の更新に失敗しました。' });
+        }
+      })
+      .catch(() => {
         sendJson(res, 400, { error: 'リクエスト形式が正しくありません。' });
       });
     return;
@@ -395,6 +603,11 @@ const server = http.createServer((req, res) => {
   let relPath = reqPath === '/' ? '/index.html' : reqPath;
   relPath = relPath.replace(/^\/+/, '');
 
+  if ((relPath === 'admin/dashboard.html' || relPath === 'admin/edit.html') && !isAdminAuthenticated(req)) {
+    sendRedirect(res, '/admin/login.html');
+    return;
+  }
+
   const filePath = path.resolve(ROOT, relPath);
   if (!filePath.startsWith(ROOT)) {
     send404(res);
@@ -419,7 +632,7 @@ const server = http.createServer((req, res) => {
       }
 
       const ext = path.extname(target).toLowerCase();
-      if (req.method === 'GET' && ext === '.html') {
+      if (req.method === 'GET' && ext === '.html' && !relPath.startsWith('admin/')) {
         const pagePath = relPath.startsWith('/') ? relPath : `/${relPath}`;
         try {
           incrementPageView(pagePath);

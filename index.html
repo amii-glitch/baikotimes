@@ -22,11 +22,6 @@
         <button id="hamburgerMenuBtn" class="hamburger-menu-btn" aria-label="メニューを開く" aria-haspopup="true" aria-expanded="false">☰</button>
       </div>
     </div>
-
-    <form class="search-form" id="searchForm" role="search" aria-label="サイト内検索">
-      <input id="searchInput" type="search" placeholder="記事・タグを検索" aria-label="検索キーワード" />
-      <button type="submit">検索</button>
-    </form>
   </header>
 
   <div id="hamburgerMenuOverlay" class="hamburger-menu-overlay" tabindex="-1" aria-hidden="true">
@@ -34,8 +29,8 @@
       <button id="hamburgerMenuClose" class="hamburger-menu-close" aria-label="閉じる">×</button>
       <nav class="hamburger-menu-list" aria-label="グローバルメニュー">
         <a href="./index.html" class="hamburger-menu-card">HOME</a>
-        <a href="./articles.html" class="hamburger-menu-card">バックナンバー</a>
-        <a href="#searchForm" class="hamburger-menu-card">ABOUT<br>MAGAZIN</a>
+        <a href="./articles.html" class="hamburger-menu-card">BACK NUMBER</a>
+        <a href="#aboutMagazineSection" class="hamburger-menu-card">ABOUT<br>MAGAZIN</a>
         <a href="https://www.instagram.com/baiko_gakuyu/" class="hamburger-menu-card instagram-link" data-instagram-handle="baiko_gakuyu" target="_blank" rel="noopener">Instagram</a>
       </nav>
     </div>
@@ -184,8 +179,6 @@
   <script>
     const reloadButton = document.getElementById('reloadButton');
     const addSpotButton = document.getElementById('addSpotButton');
-    const searchForm = document.getElementById('searchForm');
-    const searchInput = document.getElementById('searchInput');
     const latestIssueDate = document.getElementById('latestIssueDate');
     const latestIssueTitle = document.getElementById('latestIssueTitle');
     const latestIssueLink = document.getElementById('latestIssueLink');
@@ -406,23 +399,6 @@
       return out.slice(0, 8);
     }
 
-    function applySearch() {
-      const q = String(searchInput.value || '').trim().toLowerCase();
-      if (!q) {
-        renderBackNumbers(allSpots);
-        return;
-      }
-
-      const filtered = allSpots.filter((spot) => {
-        const title = String(spot.title || '').toLowerCase();
-        const summary = String(spot.summary || '').toLowerCase();
-        const tags = Array.isArray(spot.tags) ? spot.tags.join(' ').toLowerCase() : '';
-        const issue = `${spot.issueYear || ''}年${spot.issueMonth || ''}月号`.toLowerCase();
-        return title.includes(q) || summary.includes(q) || tags.includes(q) || issue.includes(q);
-      });
-      renderBackNumbers(filtered);
-    }
-
     function renderTodaysRecommendation(spots) {
       const todaysRecommendationLink = document.getElementById('todaysRecommendationLink');
       const todaysRecommendationCover = document.getElementById('todaysRecommendationCover');
@@ -489,7 +465,7 @@
         allSpots = spots;
         updateLatestIssueSection(spots);
         renderTodaysRecommendation(spots);
-        applySearch();
+        renderBackNumbers(spots);
       } catch (error) {
         latestIssueDate.textContent = '--';
         latestIssueTitle.textContent = '最新号の読み込みに失敗しました。';
@@ -499,12 +475,6 @@
         backNumberList.innerHTML = '';
       }
     }
-
-    searchForm.addEventListener('submit', (event) => {
-      event.preventDefault();
-      applySearch();
-    });
-    searchInput.addEventListener('input', applySearch);
 
     spotTagAiButton.addEventListener('click', () => {
       const title = document.getElementById('spotTitle').value.trim();

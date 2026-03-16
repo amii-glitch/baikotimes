@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>編集者ログイン | BAIKO TIMES</title>
+  <link rel="stylesheet" href="./admin.css" />
+  <script src="./auth.js" defer></script>
+</head>
+<body data-admin-page="login">
+  <main class="admin-auth-shell">
+    <section class="admin-auth-card">
+      <span class="admin-eyebrow">EDITOR LOGIN</span>
+      <h1 style="margin-top:16px;">編集者専用ログイン</h1>
+      <p>
+        一般閲覧者ページとは分離した、編集者専用の管理画面です。<br />
+        ここからアクセス数確認、ページ導線、記事の追加・編集を行います。
+      </p>
+
+      <!-- 初心者向け: このフォーム送信時に auth.js が /api/admin/login へ接続します -->
+      <form id="adminLoginForm" class="admin-form" novalidate>
+        <div class="admin-field">
+          <label for="username">ユーザー名</label>
+          <input id="username" name="username" type="text" autocomplete="username" placeholder="editor" required />
+        </div>
+        <div class="admin-field">
+          <label for="password">パスワード</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="パスワード" required />
+        </div>
+        <button class="admin-button admin-button-primary" type="submit">ログイン</button>
+        <p class="admin-message" id="adminLoginMessage" aria-live="polite"></p>
+      </form>
+
+      <p class="admin-help admin-small">
+        初期設定ではユーザー名 editor、パスワード MPJ3 です。必要なら dev-server.js 内の定数または環境変数で変更できます。
+      </p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>記事の追加・編集 | BAIKO TIMES</title>
+  <link rel="stylesheet" href="./admin.css" />
+  <script src="./auth.js" defer></script>
+  <script src="./edit.js" defer></script>
+</head>
+<body data-admin-page="edit">
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div>
+        <span class="admin-eyebrow">ARTICLE EDITOR</span>
+        <h1 style="margin-top:16px;">記事の追加・編集</h1>
+        <p class="admin-subtext">新規記事の登録と、既存記事の更新を1画面で扱えます。</p>
+      </div>
+      <div class="admin-header-actions">
+        <a class="admin-link-button" href="./dashboard.html">ダッシュボードへ戻る</a>
+        <button class="admin-button admin-button-secondary" type="button" data-admin-logout="1">ログアウト</button>
+      </div>
+    </header>
+
+    <section class="admin-dashboard-grid">
+      <aside class="admin-list-card">
+        <h2>既存記事一覧</h2>
+        <p class="admin-subtext">編集したい記事を選ぶと右側フォームに内容が入ります。</p>
+        <button id="newArticleButton" class="admin-button admin-button-secondary" type="button">新規記事を作成</button>
+        <div id="articleList" class="admin-article-list"></div>
+      </aside>
+
+      <section class="admin-form-card">
+        <h2>記事フォーム</h2>
+        <p class="admin-subtext">PDFなどの掲載ファイルは新規作成時に必須、編集時は差し替える場合だけ再選択します。</p>
+
+        <!-- 初心者向け: hidden の id が空なら新規、値があれば更新です -->
+        <form id="articleForm" class="admin-form" novalidate>
+          <input id="articleId" type="hidden" />
+
+          <div class="admin-two-column">
+            <div class="admin-field">
+              <label for="issueYear">発行年</label>
+              <input id="issueYear" type="number" min="1900" max="2100" required />
+            </div>
+            <div class="admin-field">
+              <label for="issueMonth">発行月</label>
+              <input id="issueMonth" type="number" min="1" max="12" required />
+            </div>
+          </div>
+
+          <div class="admin-field">
+            <label for="title">記事タイトル</label>
+            <input id="title" type="text" maxlength="120" required />
+          </div>
+
+          <div class="admin-field">
+            <label for="summary">説明</label>
+            <textarea id="summary" maxlength="400" placeholder="記事の概要を入力してください"></textarea>
+          </div>
+
+          <div class="admin-field">
+            <label for="tags">タグ</label>
+            <input id="tags" type="text" placeholder="例: 学生生活, 国際交流, イベント" />
+          </div>
+
+          <div class="admin-two-column">
+            <div class="admin-field">
+              <label for="fileInput">掲載ファイル</label>
+              <input id="fileInput" type="file" accept=".pdf,.html,.htm" />
+            </div>
+            <div class="admin-field">
+              <label for="coverInput">表紙画像</label>
+              <input id="coverInput" type="file" accept="image/*" />
+            </div>
+          </div>
+
+          <div class="admin-inline-actions">
+            <button class="admin-button admin-button-primary" type="submit">保存する</button>
+            <button id="resetFormButton" class="admin-button admin-button-secondary" type="button">フォームをリセット</button>
+          </div>
+          <p id="articleFormMessage" class="admin-message" aria-live="polite"></p>
+        </form>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
