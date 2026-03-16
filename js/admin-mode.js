@@ -181,18 +181,5 @@
 
   window.addEventListener('DOMContentLoaded', () => {
     syncAdminModeByHash();
-
-    // 再起動ボタンの処理
-    const restartButton = document.getElementById('restartButton');
-    if (restartButton) {
-      restartButton.addEventListener('click', () => {
-        if (window.electronAPI && window.electronAPI.restartApp) {
-          window.electronAPI.restartApp();
-        } else {
-          // Fallback: ページリロード
-          window.location.reload();
-        }
-      });
-    }
   });
 })();

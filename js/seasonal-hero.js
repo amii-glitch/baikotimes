@@ -29,15 +29,30 @@
   const lowerSource = document.querySelector('.hero-video-overlay source');
   const upperVideoTag = document.querySelector('.hero-video-base');
   const lowerVideoTag = document.querySelector('.hero-video-overlay');
+  const tryPlay = (video) => {
+    if (!video) {
+      return;
+    }
+    video.muted = true;
+    video.playsInline = true;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        // Autoplay may be blocked until user interaction on some devices.
+      });
+    }
+  };
   if (upperSource && upperVideoTag) {
     upperSource.setAttribute('src', upperVideo);
     upperSource.setAttribute('type', 'video/mp4');
     upperVideoTag.load();
+    upperVideoTag.addEventListener('canplay', () => tryPlay(upperVideoTag), { once: true });
   }
   if (lowerSource && lowerVideoTag) {
     lowerSource.setAttribute('src', lowerVideo);
     lowerSource.setAttribute('type', 'video/mp4');
     lowerVideoTag.load();
+    lowerVideoTag.addEventListener('canplay', () => tryPlay(lowerVideoTag), { once: true });
   }
 
   // 背景色は白を維持しつつ、季節クラスで配色のみ切り替える

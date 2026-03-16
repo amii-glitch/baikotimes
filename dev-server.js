@@ -21,6 +21,7 @@ const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.mp4': 'video/mp4',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
@@ -221,7 +222,16 @@ function readSpots() {
   }
   try {
     const parsed = JSON.parse(raw || '[]');
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.map((spot) => {
+      const likes = Math.max(0, Number(spot && spot.likes) || 0);
+      return {
+        ...spot,
+        likes
+      };
+    });
   } catch {
     const brokenPath = `${SPOTS_PATH}.broken-${Date.now()}.json`;
     fs.writeFileSync(brokenPath, raw, 'utf8');
@@ -469,6 +479,26 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && /^\/api\/spots\/[^/]+\/like\/?$/.test(reqPath)) {
+    const spotId = reqPath.replace(/^\/api\/spots\//, '').replace(/\/like\/?$/, '');
+    try {
+      const spots = readSpots();
+      const target = spots.find((spot) => String(spot && spot.id) === spotId);
+      if (!target) {
+        sendJson(res, 404, { error: '記事が見つかりません。' });
+        return;
+      }
+
+      target.likes = Math.max(0, Number(target.likes) || 0) + 1;
+      target.likedAt = new Date().toISOString();
+      writeSpots(spots);
+      sendJson(res, 200, { ok: true, id: target.id, likes: target.likes });
+    } catch {
+      sendJson(res, 500, { error: 'いいねの保存に失敗しました。' });
+    }
+    return;
+  }
+
   if (req.method === 'POST' && (reqPath === '/api/spots' || reqPath === '/api/spots/')) {
     if (!isAdminAuthenticated(req)) {
       sendJson(res, 401, { error: 'ログインが必要です。' });
@@ -496,6 +526,7 @@ const server = http.createServer((req, res) => {
             summary: spotInput.summary,
             tags: spotInput.tags,
             coverPath,
+            likes: 0,
             createdAt: new Date().toISOString()
           };
           spots.unshift(entry);
@@ -625,8 +656,8 @@ const server = http.createServer((req, res) => {
       target = path.join(filePath, 'index.html');
     }
 
-    fs.readFile(target, (readErr, data) => {
-      if (readErr) {
+    fs.stat(target, (targetStatErr, targetStat) => {
+      if (targetStatErr || !targetStat.isFile()) {
         send404(res);
         return;
       }
@@ -640,17 +671,63 @@ const server = http.createServer((req, res) => {
           // Keep serving pages even if stats write fails.
         }
       }
+
       const type = MIME_TYPES[ext] || 'application/octet-stream';
-      const headers = {
+      const commonHeaders = {
         'Content-Type': type,
-        'Cache-Control': 'no-store'
+        'Cache-Control': 'no-store',
+        'Accept-Ranges': 'bytes'
       };
+
       if (ext === '.pdf') {
         const fileName = path.basename(target);
-        headers['Content-Disposition'] = `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+        commonHeaders['Content-Disposition'] = `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`;
       }
-      res.writeHead(200, headers);
-      res.end(data);
+
+      const rangeHeader = String(req.headers.range || '').trim();
+      if (rangeHeader && /^bytes=/.test(rangeHeader)) {
+        const [startText, endText] = rangeHeader.replace(/bytes=/, '').split('-');
+        const fileSize = targetStat.size;
+        const start = Number(startText);
+        const requestedEnd = endText ? Number(endText) : fileSize - 1;
+        const end = Math.min(requestedEnd, fileSize - 1);
+
+        if (!Number.isFinite(start) || start < 0 || start > end) {
+          res.writeHead(416, {
+            ...commonHeaders,
+            'Content-Range': `bytes */${fileSize}`
+          });
+          res.end();
+          return;
+        }
+
+        const chunkSize = end - start + 1;
+        res.writeHead(206, {
+          ...commonHeaders,
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Content-Length': chunkSize
+        });
+
+        if (req.method === 'HEAD') {
+          res.end();
+          return;
+        }
+
+        fs.createReadStream(target, { start, end }).pipe(res);
+        return;
+      }
+
+      res.writeHead(200, {
+        ...commonHeaders,
+        'Content-Length': targetStat.size
+      });
+
+      if (req.method === 'HEAD') {
+        res.end();
+        return;
+      }
+
+      fs.createReadStream(target).pipe(res);
     });
   });
 });

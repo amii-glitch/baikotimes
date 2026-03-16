@@ -1,12 +1,13 @@
 {
-  "totalViews": 348,
+  "totalViews": 411,
   "pages": {
-    "/index.html": 130,
-    "/baiko-about.html": 130,
-    "/articles.html": 61,
-    "/article/article-viewer.html": 24,
+    "/index.html": 155,
+    "/baiko-about.html": 155,
+    "/articles.html": 68,
+    "/article/article-viewer.html": 28,
     "/uploads/1772641750165-content.html": 2,
-    "/admin/login.html": 1
+    "/admin/login.html": 1,
+    "/public/index.html": 2
   },
-  "updatedAt": "2026-03-16T12:14:07.926Z"
+  "updatedAt": "2026-03-16T12:57:04.007Z"
 }

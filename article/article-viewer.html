@@ -15,6 +15,38 @@
       --bg: #f5f7ff;
     }
 
+    body.season-spring {
+      --line: #f3cfe0;
+      --surface: #ffffff;
+      --text: #4a2a39;
+      --accent: #ef6aa8;
+      --bg: #fff7fb;
+    }
+
+    body.season-summer {
+      --line: #cfe9f3;
+      --surface: #ffffff;
+      --text: #1d3a4a;
+      --accent: #2aa9d6;
+      --bg: #f4fbff;
+    }
+
+    body.season-autumn {
+      --line: #ecd8bf;
+      --surface: #ffffff;
+      --text: #4a321d;
+      --accent: #c97a2b;
+      --bg: #fffaf3;
+    }
+
+    body.season-winter {
+      --line: #d4e4f0;
+      --surface: #ffffff;
+      --text: #263848;
+      --accent: #4d9cc7;
+      --bg: #f5f9fc;
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -66,6 +98,34 @@
       border-radius: 12px;
       overflow: hidden;
       min-height: calc(100vh - 92px);
+    }
+
+    .like-bar {
+      width: min(1200px, 96%);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 8px 0 0;
+    }
+
+    .like-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+
+    .like-count {
+      color: var(--accent);
+      font-weight: 700;
+      min-width: 4ch;
+      text-align: right;
     }
 
     .article-view {
@@ -121,6 +181,10 @@
       </nav>
     </div>
   </div>
+  <div class="like-bar" aria-label="いいね操作">
+    <button id="likeButton" class="like-btn" type="button">♥ いいね</button>
+    <span id="likeCount" class="like-count">0</span>
+  </div>
   <main class="frame-wrap">
     <div id="articleHost"></div>
   </main>
@@ -130,8 +194,104 @@
     const backButton = document.getElementById('backButton');
     backButton.textContent = '\u300c記事一覧\u300dに戻る';
     const articleHost = document.getElementById('articleHost');
+    const likeButton = document.getElementById('likeButton');
+    const likeCount = document.getElementById('likeCount');
     const params = new URLSearchParams(window.location.search);
     const src = params.get('src') || '';
+    let currentSpotId = '';
+    let isLiking = false;
+
+    function applySeasonTheme() {
+      const month = new Date().getMonth() + 1;
+      let season = 'spring';
+      if (month >= 6 && month <= 8) {
+        season = 'summer';
+      } else if (month >= 9 && month <= 11) {
+        season = 'autumn';
+      } else if (month === 12 || month <= 2) {
+        season = 'winter';
+      }
+
+      document.body.classList.remove('season-spring', 'season-summer', 'season-autumn', 'season-winter');
+      document.body.classList.add(`season-${season}`);
+    }
+
+    applySeasonTheme();
+
+    function normalizePath(input) {
+      const value = String(input || '').trim();
+      if (!value) {
+        return '';
+      }
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        return value;
+      }
+    }
+
+    async function syncLikeState() {
+      const targetPath = normalizePath(src);
+      if (!targetPath) {
+        likeButton.disabled = true;
+        likeButton.textContent = 'いいね不可';
+        likeCount.textContent = '-';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/spots', { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        const spots = Array.isArray(data.spots) ? data.spots : [];
+        const spot = spots.find((item) => {
+          const filePath = normalizePath(item && item.filePath ? item.filePath : '');
+          const legacyUrl = normalizePath(item && item.url ? item.url : '');
+          return filePath === targetPath || legacyUrl === targetPath;
+        });
+
+        if (!spot || !spot.id) {
+          likeButton.disabled = true;
+          likeButton.textContent = 'いいね不可';
+          likeCount.textContent = '-';
+          return;
+        }
+
+        currentSpotId = String(spot.id);
+        likeButton.disabled = false;
+        likeButton.textContent = '♥ いいね';
+        likeCount.textContent = String(Math.max(0, Number(spot.likes) || 0));
+      } catch {
+        likeButton.disabled = true;
+        likeButton.textContent = '通信エラー';
+        likeCount.textContent = '-';
+      }
+    }
+
+    likeButton.addEventListener('click', async () => {
+      if (!currentSpotId || isLiking) {
+        return;
+      }
+
+      isLiking = true;
+      likeButton.disabled = true;
+      try {
+        const response = await fetch(`/api/spots/${encodeURIComponent(currentSpotId)}/like`, {
+          method: 'POST'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || 'いいねの保存に失敗しました。');
+        }
+        likeCount.textContent = String(Math.max(0, Number(data.likes) || 0));
+      } catch {
+        // Keep current count on error.
+      } finally {
+        isLiking = false;
+        likeButton.disabled = !currentSpotId;
+      }
+    });
+
+    syncLikeState();
 
     async function renderPdfInline(pdfPath) {
       const pdfjsLib = window.pdfjsLib;

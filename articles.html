@@ -205,6 +205,13 @@
       font-size: 0.98rem;
     }
 
+    .all-articles-list .likes {
+      margin: 8px 0 0;
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
     .all-articles-list .tags {
       margin: 6px 0 0;
       color: var(--muted);
@@ -293,6 +300,7 @@
           <select class="articles-sort" id="sortOrder" aria-label="&#20006;&#12403;&#38918;">
             <option value="new">&#26032;&#12375;&#12356;&#38918;</option>
             <option value="old">&#21476;&#12356;&#38918;</option>
+            <option value="likes">いいねが高い順</option>
           </select>
         </label>
         <label class="articles-view-wrap" for="viewMode">
@@ -442,8 +450,16 @@
     }
 
     function sortSpotsInPlace() {
-      const mode = sortOrder && sortOrder.value === 'old' ? 'old' : 'new';
+      const mode = sortOrder ? sortOrder.value : 'new';
       allSpots.sort((a, b) => {
+        if (mode === 'likes') {
+          const likesA = Math.max(0, Number(a && a.likes) || 0);
+          const likesB = Math.max(0, Number(b && b.likes) || 0);
+          if (likesA !== likesB) {
+            return likesB - likesA;
+          }
+        }
+
         const issueDiff = toSortKey(a) - toSortKey(b);
         if (issueDiff !== 0) {
           return mode === 'old' ? issueDiff : -issueDiff;
@@ -538,11 +554,12 @@
           const issue = Number.isInteger(Number(spot.issueYear)) && Number.isInteger(Number(spot.issueMonth))
             ? `${spot.issueYear}年${spot.issueMonth}月号`
             : '掲載号未設定';
+          const likes = Math.max(0, Number(spot.likes) || 0);
           const imagePath = String(
             spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || '/uploads/1772641750165-1.svg'
           ).trim();
           const href = viewerPath || '#';
-          return `<li><a class="article-card-link" href="${escapeHtml(href)}"><span class="article-card-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="article-card-meta"><p class="issue">${issue}</p></span></a></li>`;
+          return `<li><a class="article-card-link" href="${escapeHtml(href)}"><span class="article-card-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="article-card-meta"><p class="issue">${issue}</p><p class="title">${title}</p><p class="likes">♥ ${likes}</p></span></a></li>`;
         }).join('');
       }
 

@@ -17,7 +17,6 @@
       <h1 class="site-title"><a href="./index.html">BAIKO TIMES</a><span class="site-title-sub">学生制作広報誌</span></h1>
       <div class="header-actions">
         <button class="reload-button" id="reloadButton" type="button" aria-label="ページを更新">再読み込み</button>
-        <button class="restart-button" id="restartButton" type="button" aria-label="アプリを再起動">再起動</button>
         <button class="add-spot-button" id="addSpotButton" type="button" aria-label="記事を追加">＋</button>
         <button id="hamburgerMenuBtn" class="hamburger-menu-btn" aria-label="メニューを開く" aria-haspopup="true" aria-expanded="false">☰</button>
       </div>
@@ -104,9 +103,18 @@
           <div class="about-magazine-rule" aria-hidden="true"></div>
           <div class="about-magazine-layout">
             <div class="about-magazine-body">
-              <p>学生広報誌「BAIKO TIMES」は、梅光学院大学の学生が<br>中心となって制作している広報誌です。</p>
-              <p>学生スタッフが企画・取材・編集を行い、<br>学生生活や大学イベント、授業や活動の様子など、<br>梅光学院大学の魅力を学生の視点から発信しています。</p>
-              <p>学生だからこそ伝えられるリアルな大学の姿を、<br>在学生・受験生・地域の方々へ届けています。</p>
+              <p>
+                <span class="pc-only">学生広報誌「BAIKO TIMES」は、梅光学院大学の学生が<br>中心となって制作している広報誌です。</span>
+                <span class="sp-only">学生広報誌「BAIKO TIMES」は、<br>梅光学院大学の学生が<br>中心となって制作している広報誌です。</span>
+              </p>
+              <p>
+                <span class="pc-only">学生スタッフが企画・取材・編集を行い、<br>学生生活や大学イベント、授業や活動の様子など、<br>梅光学院大学の魅力を学生の視点から発信しています。</span>
+                <span class="sp-only">学生スタッフが企画・取材・編集を行い、<br>学生生活や大学イベント、授業や活動の<br>様子など、梅光学院大学の魅力を<br>学生の視点から発信しています。</span>
+              </p>
+              <p>
+                <span class="pc-only">学生だからこそ伝えられるリアルな大学の姿を、<br>在学生・受験生・地域の方々へ届けています。</span>
+                <span class="sp-only">学生だからこそ伝えられる<br>リアルな大学の姿を、<br>在学生・受験生・地域の方々へ<br>届けています。</span>
+              </p>
             </div>
             <aside class="about-magazine-media">
               <img id="aboutMagazineImage" src="./uploads/1772641750165-1.svg" alt="BAIKO TIMES イメージ" />
@@ -119,7 +127,7 @@
     <section class="latest-issue" id="questionSection">
       <h2 class="tab-title">質問コーナー</h2>
       <div class="issue-card question-card">
-        <p>気になることや感想を気軽に送ってください。</p>
+        <p>梅光学院大学、学生生活に関する気になることや記事の感想など気軽にコメントしてください！！</p>
         <form class="question-form" id="questionForm">
           <label for="questionName">お名前（任意）</label>
           <input id="questionName" name="name" type="text" placeholder="ニックネームでもOK" />

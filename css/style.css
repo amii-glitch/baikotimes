@@ -628,6 +628,14 @@ a:hover {
     text-align: center;
   }
 
+  .todays-recommendation-feature {
+    grid-template-columns: 1fr;
+  }
+
+  .todays-recommendation-meta {
+    text-align: center;
+  }
+
   .back-number-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
@@ -718,6 +726,14 @@ a:hover {
   margin-top: 1.2em;
 }
 
+.pc-only {
+  display: inline;
+}
+
+.sp-only {
+  display: none;
+}
+
 .about-magazine-media {
   display: grid;
   gap: 10px;
@@ -762,6 +778,18 @@ a:hover {
 
   .about-magazine-body p {
     line-height: 1.9;
+  }
+
+  .about-magazine-body {
+    text-align: center;
+  }
+
+  .pc-only {
+    display: none;
+  }
+
+  .sp-only {
+    display: inline;
   }
 }
 
