@@ -200,6 +200,7 @@
     const src = params.get('src') || '';
     let currentSpotId = '';
     let isLiking = false;
+    let likeApiEnabled = false;
 
     function applySeasonTheme() {
       const month = new Date().getMonth() + 1;
@@ -230,8 +231,99 @@
       }
     }
 
+    function toCanonicalSpotPath(input) {
+      let value = normalizePath(input);
+      if (!value) {
+        return '';
+      }
+      if (value.startsWith('/')) {
+        return value;
+      }
+      if (value.startsWith('../')) {
+        while (value.startsWith('../')) {
+          value = value.slice(3);
+        }
+      }
+      if (value.startsWith('./')) {
+        value = value.slice(2);
+      }
+      return `/${value}`;
+    }
+
+    function toViewerAssetPath(input) {
+      const value = normalizePath(input);
+      if (!value) {
+        return '';
+      }
+
+      if (value.startsWith('/uploads/')) {
+        return `..${value}`;
+      }
+      if (value.startsWith('/article/')) {
+        return `.${value}`;
+      }
+      if (value.startsWith('./uploads/')) {
+        return `../${value.slice(2)}`;
+      }
+      if (value.startsWith('../uploads/')) {
+        return value;
+      }
+      if (value.startsWith('./article/')) {
+        return `./${value.slice('./article/'.length)}`;
+      }
+      if (value.startsWith('./')) {
+        return value;
+      }
+      if (value.startsWith('../')) {
+        return value;
+      }
+      if (value.startsWith('uploads/')) {
+        return `../${value}`;
+      }
+      if (value.startsWith('article/')) {
+        return `./${value.slice('article/'.length)}`;
+      }
+      return '';
+    }
+
+    async function fetchSpots() {
+      async function parseSpotsResponse(response) {
+        const raw = await response.text();
+        let parsed = null;
+        try {
+          parsed = raw ? JSON.parse(raw) : null;
+        } catch {
+          parsed = null;
+        }
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+        if (parsed && Array.isArray(parsed.spots)) {
+          return parsed.spots;
+        }
+        return [];
+      }
+
+      try {
+        const response = await fetch('/api/spots', { cache: 'no-store' });
+        if (response.ok) {
+          likeApiEnabled = true;
+          return parseSpotsResponse(response);
+        }
+      } catch {
+        // APIが使えない公開環境では静的JSONにフォールバックする。
+      }
+
+      likeApiEnabled = false;
+      const staticResponse = await fetch('../spots.json', { cache: 'no-store' });
+      if (!staticResponse.ok) {
+        throw new Error(`記事一覧の取得に失敗しました (${staticResponse.status})`);
+      }
+      return parseSpotsResponse(staticResponse);
+    }
+
     async function syncLikeState() {
-      const targetPath = normalizePath(src);
+      const targetPath = toCanonicalSpotPath(src);
       if (!targetPath) {
         likeButton.disabled = true;
         likeButton.textContent = 'いいね不可';
@@ -240,25 +332,23 @@
       }
 
       try {
-        const response = await fetch('/api/spots', { cache: 'no-store' });
-        const data = await response.json().catch(() => ({}));
-        const spots = Array.isArray(data.spots) ? data.spots : [];
+        const spots = await fetchSpots();
         const spot = spots.find((item) => {
-          const filePath = normalizePath(item && item.filePath ? item.filePath : '');
-          const legacyUrl = normalizePath(item && item.url ? item.url : '');
+          const filePath = toCanonicalSpotPath(item && item.filePath ? item.filePath : '');
+          const legacyUrl = toCanonicalSpotPath(item && item.url ? item.url : '');
           return filePath === targetPath || legacyUrl === targetPath;
         });
 
-        if (!spot || !spot.id) {
+        if (!spot) {
           likeButton.disabled = true;
           likeButton.textContent = 'いいね不可';
           likeCount.textContent = '-';
           return;
         }
 
-        currentSpotId = String(spot.id);
-        likeButton.disabled = false;
-        likeButton.textContent = '♥ いいね';
+        currentSpotId = String(spot.id || '');
+        likeButton.disabled = !likeApiEnabled || !currentSpotId;
+        likeButton.textContent = likeApiEnabled ? '♥ いいね' : '♥ いいね（公開版では無効）';
         likeCount.textContent = String(Math.max(0, Number(spot.likes) || 0));
       } catch {
         likeButton.disabled = true;
@@ -268,7 +358,7 @@
     }
 
     likeButton.addEventListener('click', async () => {
-      if (!currentSpotId || isLiking) {
+      if (!likeApiEnabled || !currentSpotId || isLiking) {
         return;
       }
 
@@ -339,11 +429,11 @@
       }
     }
 
-    const isLocalPath = src.startsWith('/uploads/') || src.startsWith('/article/');
-    if (!isLocalPath) {
+    const resolvedSrc = toViewerAssetPath(src);
+    if (!resolvedSrc) {
       articleHost.innerHTML = '<p style="padding:16px;font-family:sans-serif;">表示できる記事リンクではありません。</p>';
     } else {
-      const safeSrc = encodeURI(src);
+      const safeSrc = encodeURI(resolvedSrc);
       const isPdf = /\.pdf($|\?)/i.test(safeSrc);
       if (isPdf) {
         renderPdfInline(safeSrc);
@@ -353,7 +443,7 @@
     }
 
     backButton.addEventListener('click', () => {
-      window.location.href = '/articles.html';
+      window.location.href = '../articles.html';
     });
   </script>
 </body>

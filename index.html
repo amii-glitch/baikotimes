@@ -203,6 +203,7 @@
     const spotSubmit = document.getElementById('spotSubmit');
     const spotStatus = document.getElementById('spotStatus');
     const spotTagAiButton = document.getElementById('spotTagAiButton');
+    const coverInput = document.getElementById('spotCover');
     let allSpots = [];
     const ADMIN_HASH = '#ADMIN';
 
@@ -281,12 +282,21 @@
       });
     }
 
+    function toRootRelativePath(path) {
+      const value = String(path || '').trim();
+      if (!value) {
+        return '';
+      }
+      return value.startsWith('/') ? `.${value}` : value;
+    }
+
     function buildViewerPath(spot) {
       const filePath = String(spot && spot.filePath ? spot.filePath : '').trim();
       const legacyUrl = String(spot && spot.url ? spot.url : '').trim();
       const linkPath = filePath || legacyUrl;
-      return linkPath
-        ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
+      const normalized = toRootRelativePath(linkPath);
+      return normalized
+        ? `./article/article-viewer.html?src=${encodeURIComponent(normalized)}`
         : '#';
     }
 
@@ -305,9 +315,9 @@
         const issueText = Number.isInteger(issueYear) && Number.isInteger(issueMonth)
           ? `${issueYear}年${issueMonth}月号`
           : '掲載号未設定';
-        const imagePath = String(
+        const imagePath = toRootRelativePath(String(
           spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || './uploads/1772641750165-1.svg'
-        ).trim();
+        ).trim());
         const viewerPath = buildViewerPath(spot);
         return `<li class="back-number-card"><a href="${escapeHtml(viewerPath)}"><span class="back-number-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="back-number-label">${escapeHtml(issueText)}</span></a></li>`;
       }).join('');
@@ -351,17 +361,12 @@
       latestIssueDate.textContent = issueText;
       latestIssueTitle.textContent = issueText;
 
-      const imagePath = String(
+      const imagePath = toRootRelativePath(String(
         latest.coverImagePath || latest.coverPath || latest.thumbnailPath || latest.imagePath || './uploads/1772641750165-1.svg'
-      ).trim();
+      ).trim());
       latestIssueCover.setAttribute('src', imagePath);
 
-      const filePath = String(latest.filePath || '').trim();
-      const legacyUrl = String(latest.url || '').trim();
-      const linkPath = filePath || legacyUrl;
-      const viewerPath = linkPath
-        ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
-        : '#';
+      const viewerPath = buildViewerPath(latest);
       latestIssueLink.setAttribute('href', viewerPath);
       latestIssueReadButton.setAttribute('href', viewerPath);
     }
@@ -425,12 +430,7 @@
       const randomIndex = Math.floor(Math.random() * spots.length);
       const spot = spots[randomIndex];
 
-      const filePath = String(spot.filePath || '').trim();
-      const legacyUrl = String(spot.url || '').trim();
-      const linkPath = filePath || legacyUrl;
-      const viewerPath = linkPath
-        ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
-        : '#';
+      const viewerPath = buildViewerPath(spot);
 
       todaysRecommendationLink.setAttribute('href', viewerPath);
       todaysRecommendationReadButton.setAttribute('href', viewerPath);
@@ -444,27 +444,45 @@
       todaysRecommendationDate.textContent = issueText;
       todaysRecommendationTitle.textContent = issueText;
 
-      const imagePath = String(
-        spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || '/uploads/1772641750165-1.svg'
-      ).trim();
+      const imagePath = toRootRelativePath(String(
+        spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || './uploads/1772641750165-1.svg'
+      ).trim());
       todaysRecommendationCover.setAttribute('src', imagePath);
       todaysRecommendationCover.setAttribute('alt', String(spot.title || 'おすすめ記事'));
     }
 
     async function fetchSpots() {
-      const response = await fetch('/api/spots');
-      const raw = await response.text();
-      let parsed = {};
+      async function parseSpotsResponse(response) {
+        const raw = await response.text();
+        let parsed = null;
+        try {
+          parsed = raw ? JSON.parse(raw) : null;
+        } catch {
+          parsed = null;
+        }
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+        if (parsed && Array.isArray(parsed.spots)) {
+          return parsed.spots;
+        }
+        return [];
+      }
+
       try {
-        parsed = raw ? JSON.parse(raw) : {};
+        const apiResponse = await fetch('/api/spots', { cache: 'no-store' });
+        if (apiResponse.ok) {
+          return await parseSpotsResponse(apiResponse);
+        }
       } catch {
-        parsed = {};
+        // GitHub Pages では API が存在しないため、静的JSONへフォールバックする。
       }
-      if (!response.ok) {
-        const fallback = raw ? `記事一覧の取得に失敗しました (${response.status})` : '記事一覧の取得に失敗しました。';
-        throw new Error(parsed.error || fallback);
+
+      const staticResponse = await fetch('./spots.json', { cache: 'no-store' });
+      if (!staticResponse.ok) {
+        throw new Error(`記事一覧の取得に失敗しました (${staticResponse.status})`);
       }
-      return Array.isArray(parsed.spots) ? parsed.spots : [];
+      return parseSpotsResponse(staticResponse);
     }
 
     async function loadSpots() {

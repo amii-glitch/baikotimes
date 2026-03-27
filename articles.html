@@ -436,6 +436,14 @@
         .replaceAll("'", '&#39;');
     }
 
+    function toRootRelativePath(path) {
+      const value = String(path || '').trim();
+      if (!value) {
+        return '';
+      }
+      return value.startsWith('/') ? `.${value}` : value;
+    }
+
     function getPageCount() {
       return Math.max(1, Math.ceil(getVisibleSpots().length / PAGE_SIZE));
     }
@@ -547,17 +555,18 @@
           const filePath = String(spot.filePath || '').trim();
           const legacyUrl = String(spot.url || '').trim();
           const linkPath = filePath || legacyUrl;
-          const viewerPath = linkPath
-            ? `/article/article-viewer.html?src=${encodeURIComponent(linkPath)}`
+          const normalizedLinkPath = toRootRelativePath(linkPath);
+          const viewerPath = normalizedLinkPath
+            ? `./article/article-viewer.html?src=${encodeURIComponent(normalizedLinkPath)}`
             : '';
           const title = escapeHtml(spot.title || '');
           const issue = Number.isInteger(Number(spot.issueYear)) && Number.isInteger(Number(spot.issueMonth))
             ? `${spot.issueYear}年${spot.issueMonth}月号`
             : '掲載号未設定';
           const likes = Math.max(0, Number(spot.likes) || 0);
-          const imagePath = String(
-            spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || '/uploads/1772641750165-1.svg'
-          ).trim();
+          const imagePath = toRootRelativePath(String(
+            spot.coverImagePath || spot.coverPath || spot.thumbnailPath || spot.imagePath || './uploads/1772641750165-1.svg'
+          ).trim());
           const href = viewerPath || '#';
           return `<li><a class="article-card-link" href="${escapeHtml(href)}"><span class="article-card-thumb"><img src="${escapeHtml(imagePath)}" alt="${title}"></span><span class="article-card-meta"><p class="issue">${issue}</p><p class="title">${title}</p><p class="likes">♥ ${likes}</p></span></a></li>`;
         }).join('');
@@ -623,19 +632,40 @@
 
     async function loadAllSpots() {
       try {
-        const response = await fetch('/api/spots');
-        const raw = await response.text();
-        let parsed = {};
+        async function parseSpotsResponse(response) {
+          const raw = await response.text();
+          let parsed = null;
+          try {
+            parsed = raw ? JSON.parse(raw) : null;
+          } catch {
+            parsed = null;
+          }
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          if (parsed && Array.isArray(parsed.spots)) {
+            return parsed.spots;
+          }
+          return [];
+        }
+
+        let loadedSpots = [];
         try {
-          parsed = raw ? JSON.parse(raw) : {};
+          const apiResponse = await fetch('/api/spots', { cache: 'no-store' });
+          if (apiResponse.ok) {
+            loadedSpots = await parseSpotsResponse(apiResponse);
+          } else {
+            throw new Error('api-failed');
+          }
         } catch {
-          parsed = {};
+          const staticResponse = await fetch('./spots.json', { cache: 'no-store' });
+          if (!staticResponse.ok) {
+            throw new Error(`記事一覧の取得に失敗しました (${staticResponse.status})`);
+          }
+          loadedSpots = await parseSpotsResponse(staticResponse);
         }
-        if (!response.ok) {
-          const fallback = raw ? `記事一覧の取得に失敗しました (${response.status})` : '記事一覧の取得に失敗しました。';
-          throw new Error(parsed.error || fallback);
-        }
-        allSpots = Array.isArray(parsed.spots) ? parsed.spots : [];
+
+        allSpots = loadedSpots;
         updateSearchPlaceholder();
         sortSpotsInPlace();
         currentPage = 1;
